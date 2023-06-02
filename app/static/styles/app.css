@@ -1,0 +1,146 @@
+/* Fonts downloaded from: https://google-webfonts-helper.herokuapp.com/fonts/poppins */
+/* poppins-300 - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 300;
+  src: url("/static/fonts/poppins/poppins-v19-latin-300.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-300.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-300.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-300.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-300.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-300.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-300italic - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: italic;
+  font-weight: 300;
+  src: url("/static/fonts/poppins/poppins-v19-latin-300italic.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-300italic.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-300italic.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-300italic.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-300italic.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-300italic.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-regular - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 400;
+  src: url("/static/fonts/poppins/poppins-v19-latin-regular.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-regular.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-regular.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-regular.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-regular.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-regular.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-italic - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: italic;
+  font-weight: 400;
+  src: url("/static/fonts/poppins/poppins-v19-latin-italic.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-italic.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-italic.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-italic.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-italic.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-italic.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-700 - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 700;
+  src: url("/static/fonts/poppins/poppins-v19-latin-700.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-700.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-700.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-700.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-700.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-700.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-700italic - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: italic;
+  font-weight: 700;
+  src: url("/static/fonts/poppins/poppins-v19-latin-700italic.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-700italic.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-700italic.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-700italic.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-700italic.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-700italic.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-300 - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 300;
+  src: url("/static/fonts/poppins/poppins-v19-latin-300.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-300.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-300.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-300.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-300.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-300.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-300italic - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: italic;
+  font-weight: 300;
+  src: url("/static/fonts/poppins/poppins-v19-latin-300italic.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-300italic.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-300italic.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-300italic.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-300italic.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-300italic.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-regular - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 400;
+  src: url("/static/fonts/poppins/poppins-v19-latin-regular.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-regular.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-regular.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-regular.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-regular.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-regular.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-italic - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: italic;
+  font-weight: 400;
+  src: url("/static/fonts/poppins/poppins-v19-latin-italic.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-italic.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-italic.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-italic.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-italic.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-italic.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-700 - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 700;
+  src: url("/static/fonts/poppins/poppins-v19-latin-700.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-700.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-700.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-700.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-700.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-700.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+/* poppins-700italic - latin */
+@font-face {
+  font-family: Poppins;
+  font-style: italic;
+  font-weight: 700;
+  src: url("/static/fonts/poppins/poppins-v19-latin-700italic.eot"); /* IE9 Compat Modes */
+  src: local(""), url("/static/fonts/poppins/poppins-v19-latin-700italic.eot?#iefix") format("embedded-opentype"), url("/static/fonts/poppins/poppins-v19-latin-700italic.woff2") format("woff2"), url("/static/fonts/poppins/poppins-v19-latin-700italic.woff") format("woff"), url("/static/fonts/poppins/poppins-v19-latin-700italic.ttf") format("truetype"), url("/static/fonts/poppins/poppins-v19-latin-700italic.svg#Poppins") format("svg"); /* Legacy iOS */
+}
+* {
+  font-family: Poppins, sans-serif;
+}
+
+nav .navbar-brand {
+  font-size: xx-large;
+}
+
+@media (max-width: 575px) {
+  .navbar-flex-break {
+    flex: 0 0 100%;
+    height: 0;
+  }
+  .navbar-buttons button {
+    border-radius: 0;
+  }
+}
+@media (min-width: 576px) {
+  .navbar-buttons-end {
+    margin-left: auto;
+  }
+  .navbar-buttons button {
+    border-radius: 50rem;
+  }
+}
+.loading-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 99;
+  background-color: var(--bs-light);
+  opacity: 0.8;
+}
+
+.flex-equal-width {
+  flex: 1 1 0;
+}
+
+.toggle-button {
+  height: 36px;
+  width: 48px;
+}
+
+.flex-break {
+  flex: 0 0 100%;
+  height: 0;
+}

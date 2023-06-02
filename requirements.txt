@@ -1,0 +1,6 @@
+click
+Flask
+Werkzeug
+Flask_Session
+pyopenssl
+psycopg

@@ -1,0 +1,10 @@
+__pycache__/
+.python-version
+node_modules/
+instance/
+flask_session/
+certificate/
+
+# Environment variable files (might contain sensitive information)
+.env*
+!.env.example
