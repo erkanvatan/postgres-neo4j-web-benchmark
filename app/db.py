@@ -1,22 +1,27 @@
-import psycopg
-
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
+import psycopg
 
 
-def get_psql():
-    """Connect to PostgreSQL database and return cursor of connection."""
+def get_psql(dbname: str = None) -> psycopg.Connection:
+    """Connect to given PostgreSQL database and return connection."""
 
-    CONN_PARAMETERS = {"host": current_app.config["PSQL_HOST"], "dbname": current_app.config["PSQL_DB_NAME"],
+    conn_parameters = {"host": current_app.config["PSQL_HOST"], "dbname": current_app.config["PSQL_DB_NAME"],
                        "user": current_app.config["PSQL_DB_USER"], "password": current_app.config["PSQL_DB_PASSWORD"],
                        "port": current_app.config["PSQL_PORT"]}
+    if dbname is not None:
+        conn_parameters["dbname"] = dbname
+
     if 'psql' not in g:
+        g.psql = {}
+
+    if conn_parameters["dbname"] not in g.psql:
         # `g` object is used to store connection for multiple access to a data
         # during a request
-        g.psql = psycopg.connect(**CONN_PARAMETERS)
+        g.psql[conn_parameters["dbname"]] = psycopg.connect(**conn_parameters)
 
-    return g.psql
+    return g.psql[conn_parameters["dbname"]]
 
 
 def get_neo4j():
@@ -26,25 +31,28 @@ def get_neo4j():
 
 def close_db(e=None):
     """Close database connections if they exist."""
-    psql = g.pop('psql', None)
+    psql_dbs = g.pop('psql', None)
 
-    if psql is not None:
-        psql.close()
+    if psql_dbs is not None:
+        for value in psql_dbs.values():
+            value.close()
 
 
-def import_sql(filepath):
-    """Execute sql statements from the file."""
-    psql = get_psql()
+def import_sql(dbname: str, filepath: str):
+    """Execute sql statements from given file."""
+    psql = get_psql(dbname=dbname)
 
     with current_app.open_resource(filepath) as f:
         psql.execute(f.read().decode('utf8'))
+        psql.commit()
 
 
 @click.command('init-db')
 @with_appcontext
 def init_db_command():
-    """Clear the existing data and create new tables."""
-    import_sql('database/schema.sql')
+    """Create tables."""
+    import_sql('warehouse', 'database/create_tables_warehouse.sql')
+    import_sql('testdata', 'database/create_tables_testdata.sql')
     click.echo('Initialized the database.')
 
 
