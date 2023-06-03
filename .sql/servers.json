@@ -2,12 +2,12 @@
   "Servers": {
     "1": {
       "Name": "PostgreSQL",
-      "Group": "Default",
+      "Group": "Servers",
       "Port": 5432,
       "Username": "postgres",
       "Host": "postgresql",
       "SSLMode": "prefer",
-      "MaintenanceDB": "postgres"
+      "MaintenanceDB": "psqlvsneo4j"
     }
   }
 }

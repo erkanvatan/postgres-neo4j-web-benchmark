@@ -51,6 +51,7 @@ def import_sql(dbname: str, filepath: str):
 @with_appcontext
 def init_db_command():
     """Create tables."""
+    import_sql('database/create_tables_psqlvsneo4j.sql')
     import_sql('warehouse', 'database/create_tables_warehouse.sql')
     import_sql('testdata', 'database/create_tables_testdata.sql')
     click.echo('Initialized the database.')

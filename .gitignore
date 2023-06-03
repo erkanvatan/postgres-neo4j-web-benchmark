@@ -8,3 +8,13 @@ certificate/
 # Environment variable files (might contain sensitive information)
 .env*
 !.env.example
+
+!/jars
+/jars/*
+
+# Java intermediary and build files
+out
+target
+lib
+dependency-reduced-pom.xml
+
