@@ -1,0 +1,261 @@
+import java.sql.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class DataGeneratorThreadCustomer extends Thread {
+
+    private final HashMap<String, String[]> sql_databases;
+
+    private int iterationCount = 0;
+    private int batchExecuteValue = 0;
+    private int invoiceFactor = 0;
+    private int targetFactor = 0;
+    private int workFactor = 0;
+    private int sequentialInvoices = 0;
+    private int workCount = 0;
+
+    private int threadIndex = 0;
+    private int customerIndex = 0;
+    private int invoiceIndex = 0;
+    private int targetIndex = 0;
+
+    private int firstnameindex = 0;
+    private int surnameindex = 0;
+    private int addressindex = 0;
+
+    private final List<String> firstnames;
+    private final List<String> surnames;
+    private final List<HashMap<String, String>> addresses;
+
+    public DataGeneratorThreadCustomer(int threadindex, int iterationCount, int batchExecuteValue, HashMap<String, String[]> sql_databases, ReentrantLock lock, int invoiceFactor, int targetFactor, int workFactor, int sequentialInvoices, List<String> firstnames, List<String> surnames, List<HashMap<String, String>> addresses, int customerIndex, int invoiceIndex, int targetIndex, int workCount) {
+        this.threadIndex = threadindex;
+        this.iterationCount = iterationCount;
+        this.batchExecuteValue = batchExecuteValue;
+        this.invoiceFactor = invoiceFactor;
+        this.targetFactor = targetFactor;
+        this.workFactor = workFactor;
+        this.sequentialInvoices = sequentialInvoices;
+        this.firstnames = firstnames;
+        this.surnames = surnames;
+        this.addresses = addresses;
+        this.customerIndex = customerIndex;
+        this.invoiceIndex = invoiceIndex;
+        this.targetIndex = targetIndex;
+        this.workCount = workCount;
+        this.sql_databases = sql_databases;
+    }
+
+    public void run() {
+        try {
+            List<HashMap> preparedStatementsList = new ArrayList<>();
+            List<Connection> connectionList = new ArrayList<>();
+            
+            for (String db_url : sql_databases.keySet()) {
+                String[] db_info = sql_databases.get(db_url);
+                String db_driver = db_info[0];
+                String db_username = db_info[1];
+                String db_password = db_info[2];
+                Class.forName(db_driver);
+                Connection connection = DriverManager.getConnection(db_url + "warehouse", db_username, db_password);
+                connectionList.add(connection);
+                PreparedStatement customer = connection.prepareStatement(
+                        "INSERT INTO customer (id, name, address) VALUES (?,?,?)");
+                PreparedStatement invoice = connection.prepareStatement(
+                        "INSERT INTO invoice (id, customerId, state, duedate, previousinvoice) VALUES (?,?,?,?,?)");
+                PreparedStatement workInvoice = connection.prepareStatement(
+                        "INSERT INTO workinvoice (workId, invoiceId) VALUES (?,?)");
+                PreparedStatement target = connection.prepareStatement(
+                        "INSERT INTO target (id, name, address, customerid) VALUES (?,?,?,?)");
+                PreparedStatement workTarget = connection.prepareStatement(
+                        "INSERT INTO worktarget (workId, targetId) VALUES (?,?)");
+                HashMap<String, PreparedStatement> preparedStatements = new HashMap<String, PreparedStatement>();
+                preparedStatements.put("customer", customer);
+                preparedStatements.put("invoice", invoice);
+                preparedStatements.put("target", target);
+                preparedStatements.put("workinvoice", workInvoice);
+                preparedStatements.put("worktarget", workTarget);
+                preparedStatementsList.add(preparedStatements);
+            }
+            for (int iterator = 0; iterator < iterationCount; iterator++) {
+                insertCustomer(iterator, batchExecuteValue, preparedStatementsList);
+            }
+            for (Connection connection : connectionList) {
+                connection.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setIndexes(int index) {
+        Random r = new Random(index);
+        firstnameindex = r.nextInt(firstnames.size());
+        r = new Random(index);
+        surnameindex = r.nextInt(surnames.size());
+        r = new Random(index);
+        addressindex = r.nextInt(addresses.size());
+    }
+
+    public List<Integer> getWorkIndexes(int index) {
+        Random r = new Random();
+        List<Integer> allworkIndexes = new ArrayList<Integer>();
+        for (int i = 0; i < workCount; i++) {
+            allworkIndexes.add(i);
+        }
+        Collections.shuffle(allworkIndexes, new Random(index));
+        List<Integer> selectedWorkIndexes = allworkIndexes.subList(0, workFactor);
+        return selectedWorkIndexes;
+    }
+
+    public void insertCustomer(int iterator, int batchExecuteValue, List<HashMap> preparedStatementsList) 
+            throws SQLException {
+        PreparedStatement customer;
+        PreparedStatement invoice;
+        PreparedStatement target;
+        PreparedStatement workTarget;
+        PreparedStatement workInvoice;
+        int i = 0;
+        int j = 0;
+        
+        System.out.println("Thread: " + threadIndex + " customerIndex: " + customerIndex);
+        setIndexes(customerIndex);
+        String name = firstnames.get(firstnameindex) + " " + surnames.get(surnameindex);
+        String streetAddress = addresses.get(addressindex).get("street") + " " + addresses.get(addressindex).get("city") + " " + addresses.get(addressindex).get("district") + " " + addresses.get(addressindex).get("region") + " " + addresses.get(addressindex).get("postcode");
+        String sqlInsert = "INSERT INTO customer (id, name, address) VALUES (" + customerIndex + ",\"" + name + "\",\"" + streetAddress + "\")";
+        for (HashMap<String, PreparedStatement> preparedStatements : preparedStatementsList) {
+            customer = preparedStatements.get("customer");
+            customer.setInt(1, customerIndex);
+            customer.setString(2, name);
+            customer.setString(3, streetAddress);
+            customer.addBatch();
+        }
+        int invoiceIndexOriginal = invoiceIndex;
+        int firstInvoice = invoiceIndex;
+        Random r = new Random(invoiceIndex);
+        j = 0;
+        while (j < invoiceFactor) {
+            //-- 0 = incomplete, 1 = complete, 2 = sent, 3 = paid
+            int state = 1 + r.nextInt(3);
+            GregorianCalendar gregorianCalendar = new GregorianCalendar();
+            int year = Calendar.getInstance().get(Calendar.YEAR);
+            gregorianCalendar.set(gregorianCalendar.YEAR, year);
+            int dayOfYear = 1 + r.nextInt(gregorianCalendar.getActualMaximum(gregorianCalendar.DAY_OF_YEAR));
+            gregorianCalendar.set(gregorianCalendar.DAY_OF_YEAR, dayOfYear);
+            java.util.Date dueDate = gregorianCalendar.getTime();
+            java.sql.Date sqlDueDate = new java.sql.Date(gregorianCalendar.getTime().getTime());
+            DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+            String dueDateAsString = dateFormat.format(dueDate);
+            for (HashMap<String, PreparedStatement> preparedStatements : preparedStatementsList) {
+                invoice = preparedStatements.get("invoice");
+                if (j < sequentialInvoices) {
+                    invoice.setInt(1, invoiceIndex);
+                    invoice.setInt(2, customerIndex);
+                    invoice.setInt(3, state);
+                    invoice.setDate(4, sqlDueDate, gregorianCalendar);
+                    if (invoiceIndex == firstInvoice) {
+                        sqlInsert = "INSERT INTO invoice (id, customerId, state, duedate, previousinvoice) VALUES (" + invoiceIndex + "," + customerIndex + "," + state + ",STR_TO_DATE('" + dueDateAsString + "','%d-%m-%Y')," + invoiceIndex + ")";
+                        invoice.setInt(5, invoiceIndex);
+                    } else {
+                        sqlInsert = "INSERT INTO invoice (id, customerId, state, duedate, previousinvoice) VALUES (" + invoiceIndex + "," + customerIndex + "," + state + ",STR_TO_DATE('" + dueDateAsString + "','%d-%m-%Y')," + (invoiceIndex - 1) + ")";
+                        invoice.setInt(5, invoiceIndex - 1);
+                    }
+                    invoice.addBatch();
+                } else {
+                    sqlInsert = "INSERT INTO invoice (id, customerId, state, duedate, previousinvoice) VALUES (" + invoiceIndex + "," + customerIndex + "," + state + ",STR_TO_DATE('" + dueDateAsString + "','%d-%m-%Y')," + invoiceIndex + ")";
+                    invoice.setInt(1, invoiceIndex);
+                    invoice.setInt(2, customerIndex);
+                    invoice.setInt(3, state);
+                    invoice.setDate(4, sqlDueDate, gregorianCalendar);
+                    invoice.setInt(5, invoiceIndex);
+                    invoice.addBatch();
+                }
+            }
+            LocalDate localDate = dueDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            int month = localDate.getMonthValue();
+            int day = localDate.getDayOfMonth();
+            invoiceIndex++;
+            j++;
+        }
+        int targetIndexOriginal = targetIndex;
+        j = 0;
+        while (j < targetFactor) {
+            setIndexes(targetIndex);
+            name = firstnames.get(firstnameindex) + " " + surnames.get(surnameindex);
+            streetAddress = addresses.get(addressindex).get("street") + " " + addresses.get(addressindex).get("city") + " " + addresses.get(addressindex).get("district") + " " + addresses.get(addressindex).get("region") + " " + addresses.get(addressindex).get("postcode");
+            sqlInsert = "INSERT INTO target (id, name, address, customerid) VALUES (" + targetIndex + ",\"" + name + "\",\"" + streetAddress + "\"," + customerIndex + ")";
+            for (HashMap<String, PreparedStatement> preparedStatements : preparedStatementsList) {
+                target = preparedStatements.get("target");
+                target.setInt(1, targetIndex);
+                target.setString(2, name);
+                target.setString(3, streetAddress);
+                target.setInt(4, customerIndex);
+                target.addBatch();
+            }
+            targetIndex++;
+            j++;
+        }
+        List<Integer> workIndexes;
+        int workIndex = 0;
+        targetIndex = targetIndexOriginal;
+        i = 0;
+        while (i < targetFactor) {
+            workIndexes = getWorkIndexes(targetIndex);
+            j = 0;
+            while (j < workIndexes.size()) {
+                workIndex = workIndexes.get(j);
+                sqlInsert = "INSERT INTO worktarget (workId, targetId) VALUES (" + workIndex + "," + targetIndex + ")";
+                for (HashMap<String, PreparedStatement> preparedStatements : preparedStatementsList) {
+                    workTarget = preparedStatements.get("worktarget");
+                    workTarget.setInt(1, workIndex);
+                    workTarget.setInt(2, targetIndex);
+                    workTarget.addBatch();
+                }
+                j++;
+            }
+            targetIndex++;
+            i++;
+        }
+        invoiceIndex = invoiceIndexOriginal;
+        i = 0;
+        while (i < invoiceFactor) {
+            workIndexes = getWorkIndexes(invoiceIndex);
+            //System.out.println("workIndexes for invoice: " + invoiceIndex);
+            //System.out.println(workIndexes.toString());
+            j = 0;
+            while (j < workIndexes.size()) {
+                workIndex = workIndexes.get(j);
+                r.setSeed(invoiceIndex);
+                sqlInsert = "INSERT INTO workinvoice (workId, invoiceId) VALUES (" + workIndex + "," + invoiceIndex + ")";
+                for (HashMap<String, PreparedStatement> preparedStatements : preparedStatementsList) {
+                    workInvoice = preparedStatements.get("workinvoice");
+                    workInvoice.setInt(1, workIndex);
+                    workInvoice.setInt(2, invoiceIndex);
+                    workInvoice.addBatch();
+                }
+                j++;
+            }
+            invoiceIndex++;
+            i++;
+        }
+        workIndex++;
+        customerIndex++;
+        if (iterator % batchExecuteValue == 0 || iterator == (iterationCount - 1)) {
+            for (HashMap<String, PreparedStatement> preparedStatements : preparedStatementsList) {
+                customer = preparedStatements.get("customer");
+                invoice = preparedStatements.get("invoice");
+                target = preparedStatements.get("target");
+                workTarget = preparedStatements.get("worktarget");
+                workInvoice = preparedStatements.get("workinvoice");
+                customer.executeBatch();
+                invoice.executeBatch();
+                target.executeBatch();
+                workTarget.executeBatch();
+                workInvoice.executeBatch();
+            }
+        }
+    }
+}
