@@ -44,6 +44,8 @@ services:
     environment:
       - NEO4J_AUTH=${NEO4J_AUTH}
     # healthcheck taken from : https://stackoverflow.com/a/74689805
+    volumes:
+      - ./.neo4j:/var/lib/neo4j/import:rw
     healthcheck:
       test: wget http://localhost:7474 || exit 1
       interval: 3s

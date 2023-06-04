@@ -995,7 +995,7 @@ public class DataGenerator {
 
             for (String table :
                     tableNames) {
-                CSVWriter writer = new CSVWriter(new FileWriter(table + ".csv"));
+                CSVWriter writer = new CSVWriter(new FileWriter("csv/" + table + ".csv"));
                 ResultSet rs = stmt.executeQuery("SELECT * FROM " + table);
 
                 writer.writeAll(rs, includeHeaders);

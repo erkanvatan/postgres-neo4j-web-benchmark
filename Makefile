@@ -8,7 +8,7 @@ include .env
 .DELETE_ON_ERROR:
 
 # Default target
-all: clean up run
+all: clean generate-data run
 
 #
 # General Targets
@@ -39,14 +39,20 @@ clean: _mvn-clean
 	rm -rf ./app/__pycache__
 
 	# Clear the "jars" directory.
-	@docker run -it -v "$(shell pwd)/jars":/usr/src/tmp/jars alpine find /usr/src/tmp/jars -mindepth 1 -delete || exit 0
+	# @docker run -it -v "$(shell pwd)/jars":/usr/src/tmp/jars alpine find /usr/src/tmp/jars -mindepth 1 -delete || exit 0
+	
+	# Clear the ".neo4j" directory
+	# @docker run -it -v "$(shell pwd)/.neo4j":/usr/src/tmp/.neo4 alpine find /usr/src/tmp/.neo4j -delete || exit 0
+    	
 
 # 
 # Data Generator
 #
-generate-data: _mvn-package _mvn-clean
+generate-data: up _mvn-package _mvn-clean
 	# Start Java data generator.
 	@docker run -it --network="${PROJECT_NAME}_default" --env-file=".env" -v "$(shell pwd)/jars":/usr/src/mymaven -w /usr/src/mymaven eclipse-temurin:8-jre-alpine java -jar data_generator-1.0-SNAPSHOT.jar
+	# Copy CSV files into Neo4j "import" folder.
+	@docker cp jars/csv/ ${PROJECT_NAME}-neo4j-1:/var/lib/neo4j/import/
 
 
 #
