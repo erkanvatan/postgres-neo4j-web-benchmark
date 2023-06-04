@@ -41,7 +41,7 @@ def index():
 def csv_to_table(cursor: psycopg.Cursor, record_parser: LambdaType, table_name: str):
     """Read rows from CSV and insert them into given database table."""
     with cursor.copy(f"COPY {table_name} FROM STDIN") as copy:
-        with open(f'jars/{table_name}.csv', newline='') as csvfile:
+        with open(f'jars/csv/{table_name}.csv', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
             # Skip header
             reader.__next__()
@@ -134,6 +134,6 @@ def import_to_neo4j():
     neo4j = get_neo4j()
 
     neo4j.execute_query("""
-    LOAD CSV WITH HEADERS FROM 'file:///customer.csv' AS row
+    LOAD CSV WITH HEADERS FROM 'file:///csv/customer.csv' AS row
     MERGE (c:Customer {id: row.id, name: row.name, address: row.address});
                         """)

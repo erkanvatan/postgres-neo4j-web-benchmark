@@ -2,6 +2,7 @@ import click
 from flask import current_app, g
 from flask.cli import with_appcontext
 import psycopg
+from neo4j import GraphDatabase
 
 
 def get_psql(dbname: str = None) -> psycopg.Connection:
@@ -26,16 +27,30 @@ def get_psql(dbname: str = None) -> psycopg.Connection:
 
 def get_neo4j():
     """Connect to Neo4j graph database and return connection."""
-    pass
+    if "neo4j" not in g:
+        host = current_app.config["NEO4J_HOST"]
+        port = current_app.config["NEO4J_PORT"]
+        user = current_app.config["NEO4J_DB_USER"]
+        password = current_app.config["NEO4J_DB_PASSWORD"]
+
+        g.neo4j = GraphDatabase.driver(f"bolt:/{host}/:{port}",
+                                       auth=(user, password))
+    g.neo4j.verify_connectivity()
+
+    return g.neo4j
 
 
 def close_db(e=None):
     """Close database connections if they exist."""
     psql_dbs = g.pop('psql', None)
+    neo4j = g.pop('neo4j', None)
 
     if psql_dbs is not None:
         for value in psql_dbs.values():
             value.close()
+
+    if neo4j is not None:
+        neo4j.close()
 
 
 def import_sql(filepath: str, dbname: str = 'psqlvsneo4j'):
@@ -50,16 +65,20 @@ def import_sql(filepath: str, dbname: str = 'psqlvsneo4j'):
 @click.command('init-db')
 @with_appcontext
 def init_db_command():
-    """Create tables."""
+    """Drop records in Neo4j and PostgreSQL. Create tables in PostgreSQL."""
+    # Truncate nodes
+    neo4j = get_neo4j()
+    neo4j.execute_query("MATCH (n) DETACH DELETE (n)")
+
     # Truncate databases
     psql = get_psql()
     # Autocommit is needed for drop database and create database commands
     psql.autocommit = True
-    psql.execute("DROP DATABASE psqlvsneo4j")
+    psql.execute("DROP DATABASE IF EXISTS psqlvsneo4j")
     psql.execute("CREATE DATABASE psqlvsneo4j")
-    psql.execute("DROP DATABASE testdata")
+    psql.execute("DROP DATABASE IF EXISTS testdata")
     psql.execute("CREATE DATABASE testdata")
-    psql.execute("DROP DATABASE warehouse")
+    psql.execute("DROP DATABASE IF EXISTS warehouse")
     psql.execute("CREATE DATABASE warehouse")
     psql.autocommit = False
 
