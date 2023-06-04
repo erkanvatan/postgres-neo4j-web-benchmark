@@ -36,8 +36,11 @@ def create_app(test_config=None):
     db.init_app(app)
 
     # Register blueprints
-    from . import (index)
+    from . import (index, import_data, run_benchmark, benchmark_history)
     app.register_blueprint(index.bp)
+    app.register_blueprint(import_data.bp)
+    app.register_blueprint(run_benchmark.bp)
+    app.register_blueprint(benchmark_history.bp)
     # Make index the root
     app.add_url_rule('/', endpoint='index')
 

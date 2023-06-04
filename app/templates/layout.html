@@ -8,9 +8,9 @@
 
 <div class="collapse navbar-collapse" id="navbar">
   <ul class="navbar-nav me-auto mt-2">
-    <li class="nav-item"><a class="nav-link" href="">Generate Data</a></li>
-    <li class="nav-item"><a class="nav-link" href="">Run Benchmark</a></li>
-    <li class="nav-item"><a class="nav-link" href="">Benchmark History</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for("import_data.index") }}">Import Data</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for("run_benchmark.index") }}">Run Benchmark</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{ url_for("benchmark_history.index") }}">Benchmark History</a></li>
   </ul>
   <ul class="navbar-nav ms-auto mt-2">
     <li class="nav-item"><a class="nav-link" href="http://localhost:5050" target="_blank">PSQL Browser</a></li>

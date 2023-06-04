@@ -12,5 +12,5 @@ bp = Blueprint('index', __name__)
 # ROUTES
 @bp.route('/', methods=('GET',))
 def index():
-    """Index page."""
+    """Website index page."""
     return render_template("index.html")
