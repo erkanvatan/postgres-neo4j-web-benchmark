@@ -9,6 +9,19 @@ nav .navbar-brand {
   font-size: xx-large;
 }
 
+// Templates
+.import-data-container {
+  max-width: 800px;
+}
+
+.form-container {
+  text-align: left;
+}
+
+.login-card {
+  width: min(100%, 420px);
+}
+
 // Mobile screen
 @media (max-width: 575px) {
   .navbar-flex-break {

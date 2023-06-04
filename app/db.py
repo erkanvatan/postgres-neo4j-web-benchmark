@@ -53,6 +53,7 @@ def init_db_command():
     """Create tables."""
     # Truncate databases
     psql = get_psql()
+    # Autocommit is needed for drop database and create database commands
     psql.autocommit = True
     psql.execute("DROP DATABASE psqlvsneo4j")
     psql.execute("CREATE DATABASE psqlvsneo4j")
