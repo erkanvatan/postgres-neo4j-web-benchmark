@@ -38,7 +38,7 @@ def close_db(e=None):
             value.close()
 
 
-def import_sql(dbname: str, filepath: str):
+def import_sql(filepath: str, dbname: str = 'psqlvsneo4j'):
     """Execute sql statements from given file."""
     psql = get_psql(dbname=dbname)
 
@@ -51,10 +51,22 @@ def import_sql(dbname: str, filepath: str):
 @with_appcontext
 def init_db_command():
     """Create tables."""
-    import_sql('database/create_tables_psqlvsneo4j.sql')
-    import_sql('warehouse', 'database/create_tables_warehouse.sql')
-    import_sql('testdata', 'database/create_tables_testdata.sql')
-    click.echo('Initialized the database.')
+    # Truncate databases
+    psql = get_psql()
+    psql.autocommit = True
+    psql.execute("DROP DATABASE psqlvsneo4j")
+    psql.execute("CREATE DATABASE psqlvsneo4j")
+    psql.execute("DROP DATABASE testdata")
+    psql.execute("CREATE DATABASE testdata")
+    psql.execute("DROP DATABASE warehouse")
+    psql.execute("CREATE DATABASE warehouse")
+    psql.autocommit = False
+
+    # Initialize databases
+    import_sql('database/init_psqlvsneo4j.sql')
+    import_sql('database/init_warehouse.sql', 'warehouse')
+    import_sql('database/init_testdata.sql', 'testdata')
+    click.echo('Initialized "psqlvsneo4j", "testdata" and "warehouse" databases.')
 
 
 def init_app(app):
