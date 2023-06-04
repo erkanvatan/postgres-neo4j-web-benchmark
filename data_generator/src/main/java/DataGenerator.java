@@ -1,11 +1,11 @@
+import com.opencsv.CSVWriter;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,7 +19,7 @@ public class DataGenerator {
     private List<String> firstnames; // List of firstnames in the "testdata" database
     private List<String> surnames; // List of surnames in the "testdata" database
     private List<HashMap<String, String>> addresses; // List of addresses in the "testdata" database, 
-                                                     // addresses are stored in the HashMap like <column_name, value>.
+    // addresses are stored in the HashMap like <column_name, value>.
 
     public DataGenerator(HashMap<String, String[]> sql_databases, String default_db_url) {
         this.sql_databases = sql_databases;
@@ -28,8 +28,9 @@ public class DataGenerator {
 
     /**
      * Executes SQL update (insert, delete, update etc.) query in the database.
-     * @param sqlQuery query to run
-     * @param db_url SQL connection string
+     *
+     * @param sqlQuery    query to run
+     * @param db_url      SQL connection string
      * @param db_settings SQL settings array containing SQL driver name, username and password
      */
     public void executeSQLUpdate(String sqlQuery, String db_url, String[] db_settings) {
@@ -38,7 +39,7 @@ public class DataGenerator {
         String password = db_settings[2];
         Connection conn = null;
         Statement stmt = null;
-        
+
         try {
             Class.forName(driver);
             conn = DriverManager.getConnection(db_url, username, password);
@@ -72,6 +73,7 @@ public class DataGenerator {
 
     /**
      * Executes SQL query in the given database of the default SQL DBMS.
+     *
      * @param sqlQuery query to execute
      * @param database which database to run query in
      * @return ResulSet query result
@@ -86,7 +88,7 @@ public class DataGenerator {
         String jdbc_driver = db_settings[0];
         String username = db_settings[1];
         String password = db_settings[2];
-        
+
         try {
             Class.forName(jdbc_driver);
             conn = DriverManager.getConnection(default_db_url + database, username, password);
@@ -120,13 +122,13 @@ public class DataGenerator {
     public void truncateDatabases() {
         Connection conn = null;
         Statement stmt = null;
-        
+
         for (String db_url : sql_databases.keySet()) {
             String[] db_info = sql_databases.get(db_url);
             String db_driver = db_info[0];
             String db_username = db_info[1];
             String db_password = db_info[2];
-            
+
             try {
                 Class.forName(db_driver);
                 conn = DriverManager.getConnection(db_url + "warehouse", db_username, db_password);
@@ -170,13 +172,13 @@ public class DataGenerator {
     public void truncateDatabasesWork() {
         Connection conn = null;
         Statement stmt = null;
-        
+
         for (String db_url : sql_databases.keySet()) {
             String[] db_info = sql_databases.get(db_url);
             String db_driver = db_info[0];
             String db_username = db_info[1];
             String db_password = db_info[2];
-            
+
             try {
                 Class.forName(db_driver);
                 conn = DriverManager.getConnection(db_url + "warehouse", db_username, db_password);
@@ -213,7 +215,7 @@ public class DataGenerator {
     public void truncateDatabasesCustomer() {
         Connection conn = null;
         Statement stmt = null;
-        
+
         for (String db_url : sql_databases.keySet()) {
             String[] db_info = sql_databases.get(db_url);
             String db_driver = db_info[0];
@@ -252,8 +254,9 @@ public class DataGenerator {
     }
 
     /**
-     * Create sample tables in the "testdata" database of the given SQL URL. 
+     * Create sample tables in the "testdata" database of the given SQL URL.
      * This database contains sample data which are used when generating benchmark tables for "warehouse" database.
+     *
      * @param db_url URL of the SQL DBMS
      */
     public void createSampleTables(String db_url) {
@@ -277,7 +280,7 @@ public class DataGenerator {
                 "region varchar(50) NOT NULL," +
                 "postcode varchar(50) NOT NULL," +
                 "PRIMARY KEY (id))";
-        
+
         executeSQLUpdate(dropDatabase, db_url, db_settings);
         executeSQLUpdate(createDatabase, db_url, db_settings);
         executeSQLUpdate(firstnames, db_url + database, db_settings);
@@ -294,7 +297,7 @@ public class DataGenerator {
             surnames = new ArrayList<String>();
             addresses = new ArrayList<HashMap<String, String>>();
             ResultSet rs = executeSQLQuery("SELECT firstname FROM firstnames;", "testdata");
-            
+
             while (rs.next()) {
                 String firstName = rs.getString("firstname");
                 firstnames.add(firstName);
@@ -335,7 +338,7 @@ public class DataGenerator {
     public int getWorkCount() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT COUNT(*) AS WORKCOUNT FROM WORK", "warehouse");
         int workCount = 0;
-        
+
         while (rs.next()) {
             workCount = rs.getInt("WORKCOUNT");
         }
@@ -348,7 +351,7 @@ public class DataGenerator {
     public int getWorkTypeCount() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT COUNT(*) AS WORKTYPECOUNT FROM WORKTYPE", "warehouse");
         int workTypeCount = 0;
-        
+
         while (rs.next()) {
             workTypeCount = rs.getInt("WORKTYPECOUNT");
         }
@@ -361,7 +364,7 @@ public class DataGenerator {
     public int getItemCount() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT COUNT(*) AS ITEMCOUNT FROM ITEM", "warehouse");
         int itemCount = 0;
-        
+
         while (rs.next()) {
             itemCount = rs.getInt("ITEMCOUNT");
         }
@@ -374,7 +377,7 @@ public class DataGenerator {
     public int getCustomerCount() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT COUNT(*) AS CUSTOMERCOUNT FROM CUSTOMER", "warehouse");
         int customerCount = 0;
-        
+
         while (rs.next()) {
             customerCount = rs.getInt("CUSTOMERCOUNT");
         }
@@ -387,7 +390,7 @@ public class DataGenerator {
     public int getInvoiceCount() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT COUNT(*) AS INVOICECOUNT FROM INVOICE", "warehouse");
         int invoiceCount = 0;
-        
+
         while (rs.next()) {
             invoiceCount = rs.getInt("INVOICECOUNT");
         }
@@ -400,7 +403,7 @@ public class DataGenerator {
     public int getTargetCount() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT COUNT(*) AS TARGETCOUNT FROM TARGET", "warehouse");
         int targetCount = 0;
-        
+
         while (rs.next()) {
             targetCount = rs.getInt("TARGETCOUNT");
         }
@@ -413,7 +416,7 @@ public class DataGenerator {
     public int getLastCustomerId() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT MAX(ID) AS LASTID FROM CUSTOMER", "warehouse");
         int lastCustomerId = 0;
-        
+
         while (rs.next()) {
             lastCustomerId = rs.getInt("LASTID");
         }
@@ -426,7 +429,7 @@ public class DataGenerator {
     public int getLastWorkId() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT MAX(ID) AS LASTID FROM WORK", "warehouse");
         int workId = 0;
-        
+
         while (rs.next()) {
             workId = rs.getInt("LASTID");
         }
@@ -439,7 +442,7 @@ public class DataGenerator {
     public int getLastInvoiceId() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT MAX(ID) AS LASTID FROM INVOICE", "warehouse");
         int invoiceId = 0;
-        
+
         while (rs.next()) {
             invoiceId = rs.getInt("LASTID");
         }
@@ -452,7 +455,7 @@ public class DataGenerator {
     public int getLastTargetId() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT MAX(ID) AS LASTID FROM TARGET", "warehouse");
         int targetId = 0;
-        
+
         while (rs.next()) {
             targetId = rs.getInt("LASTID");
         }
@@ -465,7 +468,7 @@ public class DataGenerator {
     public int getLastItemId() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT MAX(ID) AS LASTID FROM ITEM", "warehouse");
         int itemId = 0;
-        
+
         while (rs.next()) {
             itemId = rs.getInt("LASTID");
         }
@@ -478,7 +481,7 @@ public class DataGenerator {
     public int getLastWorkTypeId() throws SQLException {
         ResultSet rs = executeSQLQuery("SELECT MAX(ID) AS LASTID FROM WORKTYPE", "warehouse");
         int workTypeId = 0;
-        
+
         while (rs.next()) {
             workTypeId = rs.getInt("LASTID");
         }
@@ -488,13 +491,13 @@ public class DataGenerator {
     /**
      * Delete a customer from both "invoice" and "customer" tables. This operation is performed in the order that
      * does not violate foreign key constraints.
-     * 
+     *
      * @param customerId
      */
     public void cleanSequentialInvoices(int customerId) {
         String deleteInvoicesSQL = "DELETE FROM invoice WHERE customerId = " + customerId;
         String deleteCustomerSQL = "DELETE FROM customer WHERE id = " + customerId;
-        
+
         for (String db_url : sql_databases.keySet()) {
             String[] db_settings = sql_databases.get(db_url);
             executeSQLUpdate(deleteInvoicesSQL, db_url + "warehouse", db_settings);
@@ -518,7 +521,7 @@ public class DataGenerator {
 
     /**
      * Create indexes for "invoice", "worktype", "workhours", "useditem" and "item" tables in all SQL DBMSs.
-     */ 
+     */
     public void createIndexesSQL() {
 //        String createInvoiceIndexIfNotExistsSQL = "CREATE INDEX IF NOT EXISTS invoiceIndex ON invoice(previousinvoice)";
         String createInvoiceIndexSQL = "CREATE INDEX invoiceIndex ON invoice(previousinvoice)";
@@ -530,7 +533,7 @@ public class DataGenerator {
         String createUseditemIndexSQL = "CREATE INDEX usedItemIndex ON useditem(amount, discount)";
 //        String createItemIndexIfNotExistsSQL = "CREATE INDEX IF NOT EXISTS ItemIndex ON item(purchaseprice)";
         String createItemIndexSQL = "CREATE INDEX ItemIndex ON item(purchaseprice)";
-        
+
         for (String db_url : sql_databases.keySet()) {
             String[] db_settings = sql_databases.get(db_url);
             executeSQLUpdate(createInvoiceIndexSQL, db_url + "warehouse", db_settings);
@@ -550,7 +553,7 @@ public class DataGenerator {
         String dropWorkhoursIndexSQL = "DROP INDEX workhoursIndex;";
         String dropUseditemIndexSQL = "DROP INDEX useditemIndex;";
         String dropItemIndexSQL = "DROP INDEX itemIndex;";
-        
+
         for (String db_url : sql_databases.keySet()) {
             String[] db_settings = sql_databases.get(db_url);
             executeSQLUpdate(dropInvoiceIndexSQL, db_url + "warehouse", db_settings);
@@ -562,11 +565,11 @@ public class DataGenerator {
     }
 
     /**
-     * Read sample data from csv files, preprocess the data and load them into "firstnames", "surnames" and "addresses" 
+     * Read sample data from csv files, preprocess the data and load them into "firstnames", "surnames" and "addresses"
      * tables in "testdata" database.
-     * 
+     *
      * @param batchExecuteValue count of statements in a SQL batch insert
-     * @param db_url connection URL of the SQL DBMS
+     * @param db_url            connection URL of the SQL DBMS
      */
     public void loadSampleData(int batchExecuteValue, String db_url) {
         String[] db_settings = sql_databases.get(db_url);
@@ -775,7 +778,7 @@ public class DataGenerator {
     /**
      * Generate and batch insert "customer" related data using the "testdata" table.
      */
-    public void insertCustomerData(int threadCount, int iterationsPerThread, int batchExecuteValue, int invoiceFactor, 
+    public void insertCustomerData(int threadCount, int iterationsPerThread, int batchExecuteValue, int invoiceFactor,
                                    int sequentialInvoices, int targetFactor, int workFactor) {
         try {
             int customerIndex;
@@ -807,9 +810,9 @@ public class DataGenerator {
             ReentrantLock lock = new ReentrantLock();
             System.out.println("Insertion of Customer related data started at: " + startTime.toString());
             for (int i = 0; i < threadCount; i++) {
-                DataGeneratorThreadCustomer thread = new DataGeneratorThreadCustomer(i, iterationsPerThread, 
-                        batchExecuteValue, sql_databases, lock, invoiceFactor, targetFactor, 
-                        workFactor, sequentialInvoices, firstnames, surnames, addresses, customerIndex, invoiceIndex, 
+                DataGeneratorThreadCustomer thread = new DataGeneratorThreadCustomer(i, iterationsPerThread,
+                        batchExecuteValue, sql_databases, lock, invoiceFactor, targetFactor,
+                        workFactor, sequentialInvoices, firstnames, surnames, addresses, customerIndex, invoiceIndex,
                         targetIndex, workCount);
                 executor.execute(thread);
                 customerIndex = customerIndex + iterationsPerThread;
@@ -848,8 +851,8 @@ public class DataGenerator {
             ReentrantLock lock = new ReentrantLock();
             System.out.println("Insertion of sequential invoices started at: " + startTime.toString());
             String name = firstnames.get(0) + " " + surnames.get(0);
-            String streetAddress = addresses.get(0).get("street") + " " + addresses.get(0).get("city") + " " + 
-                    addresses.get(0).get("district") + " " + addresses.get(0).get("region") + " " + 
+            String streetAddress = addresses.get(0).get("street") + " " + addresses.get(0).get("city") + " " +
+                    addresses.get(0).get("district") + " " + addresses.get(0).get("region") + " " +
                     addresses.get(0).get("postcode");
             for (String db_url : sql_databases.keySet()) {
                 String[] db_info = sql_databases.get(db_url);
@@ -869,7 +872,7 @@ public class DataGenerator {
             firstInvoiceIndex = invoiceIndex;
             for (int i = 0; i < threadCount; i++) {
                 DataGeneratorThreadSequentialInvoices thread = new DataGeneratorThreadSequentialInvoices(
-                        i, batchExecuteValue, sql_databases, lock, sequentialInvoices, customerIndex, 
+                        i, batchExecuteValue, sql_databases, lock, sequentialInvoices, customerIndex,
                         invoiceIndex, firstInvoiceIndex);
                 executor.execute(thread);
                 invoiceIndex = invoiceIndex + sequentialInvoices;
@@ -892,7 +895,7 @@ public class DataGenerator {
     /**
      * Generate and batch insert "work" related data using the "testdata" table.
      */
-    public void insertWorkData(int threadCount, int iterationsPerThread, int batchExecuteValue, int workTypeFactor, 
+    public void insertWorkData(int threadCount, int iterationsPerThread, int batchExecuteValue, int workTypeFactor,
                                int itemFactor) {
         try {
             int workIndex;
@@ -909,8 +912,8 @@ public class DataGenerator {
             ReentrantLock lock = new ReentrantLock();
             System.out.println("Insertion of Work related data started at: " + startTime.toString());
             for (int i = 0; i < threadCount; i++) {
-                DataGeneratorThreadWork thread = new DataGeneratorThreadWork(i, iterationsPerThread, batchExecuteValue, 
-                        sql_databases, lock, workIndex, itemFactor, itemCount, workTypeFactor, 
+                DataGeneratorThreadWork thread = new DataGeneratorThreadWork(i, iterationsPerThread, batchExecuteValue,
+                        sql_databases, lock, workIndex, itemFactor, itemCount, workTypeFactor,
                         workTypeCount);
                 executor.execute(thread);
                 workIndex = workIndex + iterationsPerThread;
@@ -969,6 +972,40 @@ public class DataGenerator {
             System.out.println("Insertion of items and work types finished at: " + endTime.toString());
             System.out.println("Time elapsed: " + elapsedTime);
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Export tables in "warehouse" database into CSV files. 
+     * 
+     * @param db_settings
+     */
+    public void exportTablesToCsv(String[] db_settings) {
+        String driver = db_settings[0];
+        String username = db_settings[1];
+        String password = db_settings[2];
+
+        try (Connection conn = DriverManager.getConnection(default_db_url + "warehouse", username, password);
+             Statement stmt = conn.createStatement()
+        ) {
+            List<String> tableNames = Arrays.asList("customer", "invoice", "item", "target", "useditem", "work", "workhours", "workinvoice", "worktarget", "worktype");
+            Class.forName(driver);
+            boolean includeHeaders = true;
+
+            for (String table :
+                    tableNames) {
+                CSVWriter writer = new CSVWriter(new FileWriter(table + ".csv"));
+                ResultSet rs = stmt.executeQuery("SELECT * FROM " + table);
+
+                writer.writeAll(rs, includeHeaders);
+                writer.close();
+            }
+        } catch (SQLException e) {
+            System.out.println("SQLException");
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.out.println("Exception");
             e.printStackTrace();
         }
     }

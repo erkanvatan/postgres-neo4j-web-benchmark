@@ -50,6 +50,9 @@ public class Main {
             dataGenerator.insertWorkData(10, 1000, 10, 10, 10);
             dataGenerator.insertCustomerData(10, 1000, 10, 10, 0, 10, 10);
         }
+        
+        dataGenerator.exportTablesToCsv(db_settings);
+         
 
         // Sequential Invoice Generation
 //        HashMap<String, Integer> customerInvoice = dataGenerator.insertSequentialInvoices(1, 10, 100);
