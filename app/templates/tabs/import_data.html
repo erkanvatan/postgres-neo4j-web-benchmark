@@ -8,7 +8,15 @@
 
 {% block main %}
 
-<!-- Create room form -->
+<!-- Full page loading spinner which disables clicks -->
+<div id="loading_spinner"
+  class="d-none bg-white bg-opacity-50 position-fixed overflow-auto start-0 top-0 h-100 w-100 z-2">
+  <div class="spinner-border position-absolute top-50 start-50 z-3" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
+
+<!-- Import data form -->
 <div class="card bg-light import-data-container mx-auto">
   <div class="card-header">
     <h1 class="h2 card-title text-primary mb-0">Import Data<i class="mx-2 fa-solid fa-file-import"></i></h1>
@@ -32,13 +40,24 @@
         </div>
       </div>
 
-      <div class="d-flex d-md-block mt-4 text-center">
+      <div id="import_button" class="d-flex d-md-block mt-4 text-center">
         <button type="submit" class="btn btn-primary flex-grow-1">Import</button>
       </div>
 
     </form>
   </div>
 </div>
+
+<script>
+  let loadingSpinner = document.getElementById("loading_spinner");
+  let importButton = document.getElementById("import_button");
+
+  function showLoadingSpinner() {
+    loadingSpinner.classList.remove("d-none");
+  }
+
+  importButton.addEventListener("click", showLoadingSpinner);
+</script>
 
 
 {% endblock %}

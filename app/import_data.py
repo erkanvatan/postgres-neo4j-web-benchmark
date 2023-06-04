@@ -3,10 +3,10 @@ from datetime import datetime
 import logging
 from types import LambdaType
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 import psycopg
 
-from app.db import get_psql
+from app.db import get_neo4j, get_psql
 
 
 # Uncomment following line to print DEBUG logs
@@ -19,21 +19,22 @@ bp = Blueprint('import_data', __name__, url_prefix='/import-data')
 @bp.route('/', methods=('GET', 'POST'))
 def index():
     """Import Data tab index page."""
-    errors = {}
 
     if request.method == "POST":
         f = request.form
 
         if f.get("is_import_psql") is None and f.get("is_import_neo4j") is None:
             flash("You must at least check one box", "warning")
+        else:
+            if f.get("is_import_psql", default="") == "on":
+                import_to_psql()
 
-        if f.get("is_import_psql", default="") == "on":
-            import_to_psql()
+            if f.get("is_import_neo4j", default="") == "on":
+                import_to_neo4j()
 
-        if f.get("is_import_neo4j", default="") == "on":
-            import_to_neo4j()
+            flash("Import finished!", "info")
 
-    return render_template("tabs/import_data.html", errors=errors)
+    return render_template("tabs/import_data.html")
 
 
 # Functions
@@ -62,19 +63,26 @@ def import_to_psql():
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), int(x[2]),
-                                        datetime.strptime(x[3], '%d-%b-%Y').date(), int(x[4])), "invoice")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"invoice" table is not empty', "warning")
-        psql.rollback()
-
-    try:
         csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2]), x[3], float(x[4]), float(x[5]),
                                         1 if x[6] == "true" else 0), "item")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"item" table is not empty', "warning")
+        psql.rollback()
+
+    try:
+        csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2])), "worktype")
+        psql.commit()
+    except psycopg.errors.IntegrityError:
+        flash('"worktype" table is not empty', "warning")
+        psql.rollback()
+
+    try:
+        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), int(x[2]),
+                                        datetime.strptime(x[3], '%d-%b-%Y').date(), int(x[4])), "invoice")
+        psql.commit()
+    except psycopg.errors.IntegrityError:
+        flash('"invoice" table is not empty', "warning")
         psql.rollback()
 
     try:
@@ -85,24 +93,10 @@ def import_to_psql():
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), float(x[1]), int(x[2]), int(x[3])), "useditem")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"useditem" table is not empty', "warning")
-        psql.rollback()
-
-    try:
         csv_to_table(cursor, lambda x: (int(x[0]), x[1]), "work")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"work" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), float(x[2]), int(x[3])), "workhours")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"workhours" table is not empty', "warning")
         psql.rollback()
 
     try:
@@ -120,14 +114,26 @@ def import_to_psql():
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2])), "worktype")
+        csv_to_table(cursor, lambda x: (int(x[0]), float(x[1]), int(x[2]), int(x[3])), "useditem")
         psql.commit()
     except psycopg.errors.IntegrityError:
-        flash('"worktype" table is not empty', "warning")
+        flash('"useditem" table is not empty', "warning")
+        psql.rollback()
+
+    try:
+        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), float(x[2]), int(x[3])), "workhours")
+        psql.commit()
+    except psycopg.errors.IntegrityError:
+        flash('"workhours" table is not empty', "warning")
         psql.rollback()
 
 
 def import_to_neo4j():
     """Import data into Neo4j database using CSV files."""
     print("import_neo4j")
-    pass
+    neo4j = get_neo4j()
+
+    neo4j.execute_query("""
+    LOAD CSV WITH HEADERS FROM 'file:///customer.csv' AS row
+    MERGE (c:Customer {id: row.id, name: row.name, address: row.address});
+                        """)
