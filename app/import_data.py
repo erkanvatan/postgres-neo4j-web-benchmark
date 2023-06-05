@@ -265,3 +265,12 @@ discount: toFloat(row.discount)} ]->(wt)
 CREATE (wt)-[:WORKHOURS {hours: toInteger(row.hours),
 discount: toFloat(row.discount)} ]->(w)""",
                         database_="neo4j")
+
+    # Drop created indexes
+    neo4j.execute_query("""
+DROP INDEX customer_pk IF EXISTS;
+DROP INDEX invoice_pk IF EXISTS;
+DROP INDEX item_pk IF EXISTS;
+DROP INDEX target_pk IF EXISTS;
+DROP INDEX work_pk IF EXISTS;
+DROP INDEX worktype_pk IF EXISTS;""", databaes_="neo4j")

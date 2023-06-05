@@ -8,8 +8,65 @@
 
 {% block main %}
 
-<div class="container-fluid d-flex flex-column align-items-center justify-content-center">
-  <h1 class="display-4">Hello Run Benchmark!
-  </h1>
+<!-- Full page loading spinner which disables clicks -->
+<div id="loading_spinner"
+  class="d-none bg-white bg-opacity-50 position-fixed overflow-auto start-0 top-0 h-100 w-100 z-2">
+  <div class="spinner-border position-absolute top-50 start-50 z-3" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
 </div>
+
+<!-- Import data form -->
+<div class="card bg-light import-data-container mx-auto">
+  <div class="card-header">
+    <h1 class="h2 card-title text-primary mb-0">Run Benchmark<i class="mx-2 fa-solid fa-database"></i></h1>
+  </div>
+  <div class="card-body py-4">
+    <form action="{{ url_for("run_benchmark.index") }}" method="post" accept-charset="utf-8">
+
+      <div class="row mb-3">
+        <label for="psql_query" class="col-sm-3 col-form-label">PostgreSQL Query</label>
+        <div class="col-sm-9">
+          <textarea class="form-control" id="psql_query" name="psql_query">{{ request.form["psql_query"] }}</textarea>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <label for="neo4j_query" class="col-sm-3 col-form-label">Neo4j Query</label>
+        <div class="col-sm-9">
+          <textarea class="form-control" id="neo4j_query"
+            name="neo4j_query">{{ request.form["neo4j_query"] }}</textarea>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <label for="iteration_count" class="col-sm-3 col-form-label">Iteration Count (3-12)</label>
+
+        <div class="col-sm-8 bg-dark-subtle mx-2 rounded">
+          <input type="range" min="3" max="12" value="3" class="form-range " id="iteration_count"
+            name="iteration_count">
+        </div>
+      </div>
+
+      <div class="d-flex d-md-block mt-4 text-center">
+        <button id="run_button" name="run_button" type="submit"
+          class="btn btn btn-primary flex-grow-1 col-md-2 me-1">Run</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  let loadingSpinner = document.getElementById("loading_spinner");
+  let runButton = document.getElementById("run_button");
+
+  function showLoadingSpinner() {
+    loadingSpinner.classList.remove("d-none");
+  }
+
+  runButton.addEventListener("click", showLoadingSpinner);
+</script>
+
+
 {% endblock %}
