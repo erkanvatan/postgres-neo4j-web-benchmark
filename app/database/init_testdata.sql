@@ -19,3 +19,4 @@ CREATE TABLE IF NOT EXISTS addresses (
     postcode varchar(50) NOT NULL,
     PRIMARY KEY (id)
 );
+

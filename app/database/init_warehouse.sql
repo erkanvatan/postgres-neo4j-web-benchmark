@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS item (
     unit varchar(10) NOT NULL CHECK (unit <> ''),
     purchaseprice decimal(65, 10) NOT NULL,
     vat decimal(65, 2) NOT NULL,
-    removed smallint NOT NULL DEFAULT 0,
+    removed boolean NOT NULL DEFAULT FALSE,
     PRIMARY KEY (id)
 );
 
@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS invoice (
     id bigint NOT NULL,
     customerId bigint NOT NULL,
     state int NOT NULL,
-    duedate date DEFAULT NULL,
     previousinvoice bigint NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT customer_ibfk_1 FOREIGN KEY (customerId) REFERENCES customer (id)
@@ -37,9 +36,9 @@ CREATE TABLE IF NOT EXISTS target (
     id bigint NOT NULL,
     name varchar(100) NOT NULL CHECK (name <> ''),
     address varchar(100) NOT NULL CHECK (address <> ''),
-    customerid bigint NOT NULL,
+    customerId bigint NOT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT target_ibfk_1 FOREIGN KEY (customerid) REFERENCES customer (id)
+    CONSTRAINT target_ibfk_1 FOREIGN KEY (customerId) REFERENCES customer (id)
 );
 
 CREATE TABLE IF NOT EXISTS WORK (

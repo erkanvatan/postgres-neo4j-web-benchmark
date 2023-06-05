@@ -62,14 +62,8 @@ def import_sql(filepath: str, dbname: str = 'psqlvsneo4j'):
         psql.commit()
 
 
-@click.command('init-db')
-@with_appcontext
-def init_db_command():
-    """Drop records in Neo4j and PostgreSQL. Create tables in PostgreSQL."""
-    # Truncate nodes
-    neo4j = get_neo4j()
-    neo4j.execute_query("MATCH (n) DETACH DELETE (n)")
-
+def init_psql():
+    """Drop and recreate tables in PostgreSQL."""
     # Truncate databases
     psql = get_psql()
     # Autocommit is needed for drop database and create database commands
@@ -86,10 +80,33 @@ def init_db_command():
     import_sql('database/init_psqlvsneo4j.sql')
     import_sql('database/init_warehouse.sql', 'warehouse')
     import_sql('database/init_testdata.sql', 'testdata')
+
+
+@click.command('init-psql')
+@with_appcontext
+def init_psql_command():
+    """Drop and recreate tables in PostgreSQL."""
+    init_psql()
     click.echo('Initialized "psqlvsneo4j", "testdata" and "warehouse" databases.')
+
+
+def init_neo4j():
+    """Drop records in Neo4j."""
+    # Truncate nodes
+    neo4j = get_neo4j()
+    neo4j.execute_query("MATCH (n) DETACH DELETE (n)")
+    click.echo('Initialized neo4j database.')
+
+
+@click.command('init-neo4j')
+@with_appcontext
+def init_neo4j_command():
+    """Drop records in Neo4j."""
+    init_neo4j()
 
 
 def init_app(app):
     """Initialize app with the database commands."""
     app.teardown_appcontext(close_db)
-    app.cli.add_command(init_db_command)
+    app.cli.add_command(init_psql_command)
+    app.cli.add_command(init_neo4j_command)

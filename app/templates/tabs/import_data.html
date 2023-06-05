@@ -24,24 +24,27 @@
   <div class="card-body py-4">
     <form action="{{ url_for("import_data.index") }}" method="post" accept-charset="utf-8">
 
-      <div class="d-flex px-5">
-        <div class="form-check-inline fs-4 me-auto">
-          <input class="form-check-input" type="checkbox" id="is_import_psql" name="is_import_psql">
+      <div class="d-flex justify-content-center">
+        <div class="form-check-inline fs-4 col-3 text-end me-1">
           <label class="form-check-label" for="is_import_psql">
-            Import to PostgreSQL
+            PostgreSQL
           </label>
+          <input class="form-check-input" type="checkbox" id="is_import_psql" name="is_import_psql">
         </div>
 
-        <div class="form-check-inline fs-4">
+        <div class="form-check-inline fs-4 col-3 text-start ms-1 me-0">
           <input class="form-check-input" type="checkbox" id="is_import_neo4j" name="is_import_neo4j">
           <label class="form-check-label" for="is_import_neo4j">
-            Import to Neo4j
+            Neo4j
           </label>
         </div>
       </div>
 
-      <div id="import_button" class="d-flex d-md-block mt-4 text-center">
-        <button type="submit" class="btn btn-lg btn-primary flex-grow-1">Import</button>
+      <div class="d-flex d-md-block mt-4 text-center">
+        <button id="import_button" name="import_button" type="submit"
+          class="btn btn btn-primary flex-grow-1 col-md-2 me-1">Import</button>
+        <button id="drop_button" name="drop_button" type="submit"
+          class="btn btn btn-primary flex-grow-1 col-md-2 ms-1">Drop</button>
       </div>
 
     </form>
@@ -51,12 +54,14 @@
 <script>
   let loadingSpinner = document.getElementById("loading_spinner");
   let importButton = document.getElementById("import_button");
+  let dropButton = document.getElementById("drop_button");
 
   function showLoadingSpinner() {
     loadingSpinner.classList.remove("d-none");
   }
 
   importButton.addEventListener("click", showLoadingSpinner);
+  dropButton.addEventListener("click", showLoadingSpinner);
 </script>
 
 
