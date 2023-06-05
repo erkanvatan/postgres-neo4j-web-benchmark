@@ -9,7 +9,55 @@
 {% block main %}
 
 <div class="container-fluid d-flex flex-column align-items-center justify-content-center">
-  <h1 class="display-4">Benchmark History</h1>
+  <h1 class="display-6 mb-5">Benchmark History</h1>
+
+  <table class="table table-bordered table-striped table-hover">
+    <thead>
+      <tr>
+        <th scope="col"></th>
+        <th scope="col"></th>
+        <th colspan="6" scope="col" class="text-center">PostgreSQL</th>
+        <th colspan="6" scope="col" class="text-center">Neo4j</th>
+      </tr>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Iterations</th>
+        <th scope="col">Query</th>
+        <th scope="col">Row Count</th>
+        <th scope="col">Runtimes (ms)</th>
+        <th scope="col">Min Runtime</th>
+        <th scope="col">Max Runtime</th>
+        <th scope="col">Avg Runtime</th>
+        <th scope="col">Query</th>
+        <th scope="col">Row Count</th>
+        <th scope="col">Runtimes (ms)</th>
+        <th scope="col">Min Runtime</th>
+        <th scope="col">Max Runtime</th>
+        <th scope="col">Avg Runtime</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td scope="col">{{ row["benchmark_log_id"] }}</td>
+        <td scope="col">{{ row["iteration_count"] }}</td>
+        <td scope="col">{{ row["psql_query"] }} </td>
+        <td scope="col">{{ row["psql_nrows"] }}</td>
+        <td scope="col">{{ row["psql_runtimes"] }}</td>
+        <td scope="col">{{ row["psql_min"] }}</td>
+        <td scope="col">{{ row["psql_max"] }}</td>
+        <td scope="col">{{ row["psql_avg"] }}</td>
+        <td scope="col">{{ row["neo4j_query"] }}</td>
+        <td scope="col">{{ row["neo4j_nrows"] }}</td>
+        <td scope="col">{{ row["neo4j_runtimes"] }}</td>
+        <td scope="col">{{ row["neo4j_min"] }}</td>
+        <td scope="col">{{ row["neo4j_max"] }}</td>
+        <td scope="col">{{ row["neo4j_avg"] }}</td>
+      </tr>
+      {% endfor %}
+
+    </tbody>
+  </table>
 
 
 </div>

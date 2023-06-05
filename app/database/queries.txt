@@ -1,40 +1,4 @@
---  executeQueryWithDefinedKeySQL
-SELECT
-    q1.customerId,
-    q2.invoiceId,
-    SUM(q3.price) AS invoicePrice
-FROM (
-    SELECT
-        customer.id AS customerId,
-        invoice.id AS invoiceId
-    FROM
-        invoice
-        INNER JOIN customer ON invoice.customerId = customer.id) AS q1
-    INNER JOIN (
-        SELECT
-            workinvoice.invoiceId,
-            workinvoice.workId
-        FROM
-            workinvoice
-            INNER JOIN invoice ON workinvoice.invoiceId = invoice.id) AS q2 USING (invoiceId)
-    INNER JOIN (
-        SELECT
-            workhours.workid AS workId,
-            SUM((worktype.price * workhours.hours * workhours.discount) + (item.purchaseprice * useditem.amount * useditem.discount)) AS price
-        FROM
-            workhours
-            INNER JOIN worktype ON workhours.worktypeid = worktype.id
-            INNER JOIN useditem ON workhours.workid = useditem.workid
-            INNER JOIN item ON useditem.itemid = item.id
-        GROUP BY
-            workhours.workid) AS q3 USING (workId)
-WHERE
-    q1.customerId = 0
-GROUP BY
-    q2.invoiceId,
-    q1.customerId;
-
--- Query Number of Rows in "warehouse" Tables
+-- Find Table Row Counts in "warehouse"
 WITH customer_count(id, customer_count) AS (SELECT 0, count(*) FROM customer),
 invoice_count(id, invoice_count) AS (SELECT 0, count(*) FROM invoice),
 item_count(id, item_count) AS (SELECT 0, count(*) FROM item),
@@ -56,3 +20,36 @@ INNER JOIN workhours_count AS t7 USING(id)
 INNER JOIN workinvoice_count AS t8 USING(id) 
 INNER JOIN worktarget_count AS t9 USING(id)
 INNER JOIN worktype_count AS t10 USING(id);
+
+--
+-- Short query, work price
+--
+
+-- SQL
+SELECT work.id AS workId, SUM((worktype.price * workhours.hours * workhours.discount)) AS price FROM work 
+INNER JOIN workhours ON work.id = workhours.workId 
+INNER JOIN worktype ON worktype.id = workhours.worktypeId 
+GROUP BY work.id
+
+-- Cypher
+MATCH (wt:worktype)-[h:WORKHOURS]->(w:work) WITH SUM(h.hours*h.discount*wt.price) as price, w RETURN w.workId as workId, price;
+
+--
+-- Long query, work price
+--
+
+-- SQL
+
+SELECT work.id AS workId, SUM(
+    (worktype.price * workhours.hours * workhours.discount) + (item.purchaseprice * useditem.amount * useditem.discount) 
+) AS price FROM work 
+INNER JOIN workhours ON work.id = workhours.workId 
+INNER JOIN worktype ON worktype.id = workhours.worktypeId 
+INNER JOIN useditem ON work.id = useditem.workId 
+INNER JOIN item ON useditem.itemId = item.id GROUP BY work.id;
+
+-- Cypher
+
+MATCH (wt:worktype)-[h:WORKHOURS]->(w:work)-[u:USED_ITEM]->(i:item) WITH 
+SUM((h.hours*h.discount*wt.price)+(u.amount*u.discount*i.purchaseprice)) as price, 
+w RETURN w.workId as workId, price
