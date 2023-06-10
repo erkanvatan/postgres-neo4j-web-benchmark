@@ -59,10 +59,10 @@ def index():
 
 
 # Functions
-def csv_to_table(cursor: psycopg.Cursor, record_parser: LambdaType, table_name: str):
+def csv_to_table(cursor: psycopg.Cursor, record_parser: LambdaType, table_name: str, db_name: str):
     """Read rows from CSV and insert them into given database table."""
     with cursor.copy(f"COPY {table_name} FROM STDIN") as copy:
-        with open(f'jars/csv/{table_name}.csv', newline='') as csvfile:
+        with open(f'data/{db_name}/{table_name}.csv', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
             # Skip header
             reader.__next__()
@@ -71,13 +71,13 @@ def csv_to_table(cursor: psycopg.Cursor, record_parser: LambdaType, table_name: 
                 copy.write_row(record)
 
 
-def import_to_psql():
-    """Import data into PostgreSQL database using CSV files."""
+def import_to_psql_warehouse():
+    """Import data into PostgreSQL "warehouse" database using CSV files."""
     psql = get_psql("warehouse")
     cursor = psql.cursor()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], x[2]), "customer")
+        csv_to_table(cursor, lambda x: (int(x[0]), x[1], x[2]), "customer", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"customer" table is not empty', "warning")
@@ -85,107 +85,147 @@ def import_to_psql():
 
     try:
         csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2]), x[3], float(x[4]), float(x[5]),
-                                        True if x[6] == "true" else False), "item")
+                                        True if x[6] == "true" else False), "item", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"item" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2])), "worktype")
+        csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2])), "worktype", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"worktype" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), int(x[2]), int(x[4])), "invoice")
+        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), int(x[2]), int(x[4])), "invoice", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"invoice" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], x[2], int(x[3])), "target")
+        csv_to_table(cursor, lambda x: (int(x[0]), x[1], x[2], int(x[3])), "target", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"target" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1]), "work")
+        csv_to_table(cursor, lambda x: (int(x[0]), x[1]), "work", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"work" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1])), "workinvoice")
+        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1])), "workinvoice", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"workinvoice" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1])), "worktarget")
+        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1])), "worktarget", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"worktarget" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), float(x[1]), int(x[2]), int(x[3])), "useditem")
+        csv_to_table(cursor, lambda x: (int(x[0]), float(x[1]), int(x[2]), int(x[3])), "useditem", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"useditem" table is not empty', "warning")
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), float(x[2]), int(x[3])), "workhours")
+        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), float(x[2]), int(x[3])), "workhours", "warehouse")
         psql.commit()
     except psycopg.errors.IntegrityError:
         flash('"workhours" table is not empty', "warning")
         psql.rollback()
 
 
-def import_to_neo4j():
-    """Import data into Neo4j database using CSV files."""
+def import_to_psql_university():
+    """Import data into PostgreSQL "university" database using CSV files."""
+    psql = get_psql("university")
+    cursor = psql.cursor()
+
+    try:
+        csv_to_table(cursor, lambda x: (x[0], x[1]), "course", "university")
+        psql.commit()
+    except psycopg.errors.IntegrityError:
+        flash('"course" table is not empty', "warning")
+        psql.rollback()
+
+    try:
+        csv_to_table(cursor, lambda x: (x[0], x[1]), "student", "university")
+        psql.commit()
+    except psycopg.errors.IntegrityError:
+        flash('"student" table is not empty', "warning")
+        psql.rollback()
+
+    try:
+        csv_to_table(cursor, lambda x: (x[0], x[1]), "takes", "university")
+        psql.commit()
+    except psycopg.errors.IntegrityError:
+        flash('"takes" table is not empty', "warning")
+        psql.rollback()
+
+    try:
+        csv_to_table(cursor, lambda x: (x[0], x[1]), "prereq", "university")
+        psql.commit()
+    except psycopg.errors.IntegrityError:
+        flash('"prereq" table is not empty', "warning")
+        psql.rollback()
+
+
+def import_to_psql():
+    """Import data into PostgreSQL databases using CSV files."""
+    import_to_psql_warehouse()
+    #  import_to_psql_university()
+
+
+def import_to_neo4j_warehouse():
+    """Import data into Neo4j "warehouse" database using CSV files."""
     print("import_neo4j")
     neo4j = get_neo4j()
 
     # Create "customer" label
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/customer.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/customer.csv' AS row
 CREATE (:customer {id: toInteger(row.id), name: row.name, address: row.address})""", database_="neo4j")
 
     # Create "item" label
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/item.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/item.csv' AS row
 CREATE (:item {id: toInteger(row.id), name: row.name, balance: toInteger(row.balance),
 unit: row.unit, purchaseprice: toFloat(row.purchaseprice), vat: toFloat(row.vat), removed: toBoolean(row.removed)})""",
                         database_="neo4j")
 
     # Create "worktype" label
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/worktype.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/worktype.csv' AS row
 CREATE (:worktype {id: toInteger(row.id), name: row.name, price: toInteger(row.price)})""",
                         database_="neo4j")
 
     # Create "invoice" label
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/invoice.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/invoice.csv' AS row
 CREATE (:invoice {id: toInteger(row.id), state: toInteger(row.state)})""",
                         database_="neo4j")
 
     # Create "target" label
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/target.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/target.csv' AS row
 CREATE (:target {id: toInteger(row.id), name: row.name, address: row.address})""",
                         database_="neo4j")
 
     # Create "work" label
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/work.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/work.csv' AS row
 CREATE (:work {id: toInteger(row.id), name: row.name})""",
                         database_="neo4j")
 
@@ -196,7 +236,7 @@ CREATE (:work {id: toInteger(row.id), name: row.name})""",
 
     # Create "PAYS" relationship from "customer" to "invoice"
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/invoice.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/invoice.csv' AS row
 MATCH (cust:customer {id: toInteger(row.customerid)})
 MATCH (inv:invoice {id: toInteger(row.id)})
 CREATE (cust)-[:PAYS]->(inv)""",
@@ -208,7 +248,7 @@ CREATE (cust)-[:PAYS]->(inv)""",
 
     # Create "CUSTOMER_TARGET" relationship from "customer" to "target"
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/target.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/target.csv' AS row
 MATCH (cust:customer {id: toInteger(row.customerid)})
 MATCH (tar:target {id: toInteger(row.id)})
 CREATE (cust)-[:CUSTOMER_TARGET]->(tar)""",
@@ -220,7 +260,7 @@ CREATE (cust)-[:CUSTOMER_TARGET]->(tar)""",
 
     #  Create "WORK_INVOICE" relationship between "work" and "invoice"
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/workinvoice.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/workinvoice.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (inv:invoice {id: toInteger(row.invoiceid)})
 CREATE (inv)-[:WORK_INVOICE]->(w)
@@ -229,7 +269,7 @@ CREATE (w)-[:WORK_INVOICE]->(inv)""",
 
     #  Create "WORK_TARGET" relationship between "work" and "target"
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/worktarget.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/worktarget.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (tar:target {id: toInteger(row.targetid)})
 CREATE (w)-[:WORK_TARGET]->(tar)
@@ -242,7 +282,7 @@ CREATE (tar)-[:WORK_TARGET]->(w)""",
 
     #  Create "WORK_TARGET" relationship between "work" and "target"
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/useditem.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/useditem.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (it:item {id: toInteger(row.itemid)})
 CREATE (w)-[:USED_ITEM {amount: toInteger(row.amount),
@@ -257,7 +297,7 @@ discount: toFloat(row.discount)} ]->(w)""",
 
     #  Create "WORK_TARGET" relationship between "work" and "target"
     neo4j.execute_query("""
-LOAD CSV WITH HEADERS FROM 'file:///csv/workhours.csv' AS row
+LOAD CSV WITH HEADERS FROM 'file:///warehouse/workhours.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (wt:worktype {id: toInteger(row.worktypeid)})
 CREATE (w)-[:WORKHOURS {hours: toInteger(row.hours),
@@ -273,4 +313,14 @@ DROP INDEX invoice_pk IF EXISTS;
 DROP INDEX item_pk IF EXISTS;
 DROP INDEX target_pk IF EXISTS;
 DROP INDEX work_pk IF EXISTS;
-DROP INDEX worktype_pk IF EXISTS;""", databaes_="neo4j")
+DROP INDEX worktype_pk IF EXISTS;""", database_="neo4j")
+
+
+def import_to_neo4j_university():
+    """Import data into Neo4j "university" database using CSV files."""
+    pass
+
+
+def import_to_neo4j():
+    import_to_neo4j_warehouse()
+    #  import_to_neo4j_university()

@@ -68,18 +68,20 @@ def init_psql():
     psql = get_psql()
     # Autocommit is needed for drop database and create database commands
     psql.autocommit = True
-    psql.execute("DROP DATABASE IF EXISTS psqlvsneo4j")
-    psql.execute("CREATE DATABASE psqlvsneo4j")
+    psql.execute("DROP TABLE IF EXISTS usertable, benchmark_log")
     psql.execute("DROP DATABASE IF EXISTS testdata")
     psql.execute("CREATE DATABASE testdata")
     psql.execute("DROP DATABASE IF EXISTS warehouse")
     psql.execute("CREATE DATABASE warehouse")
+    psql.execute("DROP DATABASE IF EXISTS university")
+    psql.execute("CREATE DATABASE university")
     psql.autocommit = False
 
     # Initialize databases
     import_sql('database/init_psqlvsneo4j.sql')
     import_sql('database/init_warehouse.sql', 'warehouse')
     import_sql('database/init_testdata.sql', 'testdata')
+    import_sql('database/init_university.sql', 'university')
 
 
 @click.command('init-psql')

@@ -83,7 +83,7 @@ def measure_query_time_neo4j(neo4j_query: str, iteration_count: int) -> tuple:
     for i in range(iteration_count):
         start_time_sec = time.time()
 
-        res, _, _ = neo4j.execute_query(neo4j_query, database_="neo4j")
+        res, _, _ = neo4j.execute_query(neo4j_query, database_="warehouse")
 
         end_time_sec = time.time()
 
