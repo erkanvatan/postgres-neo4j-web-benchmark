@@ -5,3 +5,4 @@ Flask_Session
 pyopenssl
 psycopg
 neo4j
+faker
