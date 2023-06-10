@@ -2,11 +2,8 @@
 __pycache__/
 .python-version
 node_modules/
-instance/
 flask_session/
 certificate/
-app/database/csvs
-
 
 # Environment variable files (might contain sensitive information)
 .env*
@@ -14,12 +11,11 @@ app/database/csvs
 
 .idea
 
-!/jars
-/jars/*
+!/data
+/data/*
 
 # Java intermediary and build files
 out
 target
 lib
 dependency-reduced-pom.xml
-
