@@ -1,4 +1,4 @@
-# Python intermediary project files
+# Flask intermediary project files
 __pycache__/
 .python-version
 node_modules/
@@ -19,3 +19,6 @@ out
 target
 lib
 dependency-reduced-pom.xml
+
+# Docker intermediary files
+.neo4j
