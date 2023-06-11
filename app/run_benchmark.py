@@ -23,6 +23,8 @@ def index():
     if request.method == "POST":
         f = request.form
 
+        session["psql_query"] = f["psql_query"]
+        session["neo4j_query"] = f["neo4j_query"]
         if f.get("select_database") is None or f.get("select_database") == "Select Database":
             flash("You must select a database", "warning")
             is_error = True
@@ -48,6 +50,7 @@ def index():
             is_error = True
 
         if not is_error:
+
             iteration_count = int(f["iteration_count"])
             try:
                 psql_runtimes, psql_nrows = measure_query_time_sql(f["psql_query"],

@@ -38,7 +38,8 @@
       <div class="row mb-3">
         <label for="psql_query" class="col-sm-3 col-form-label">PostgreSQL Query</label>
         <div class="col-sm-9">
-          <textarea class="form-control" id="psql_query" name="psql_query">{{ request.form["psql_query"] }}</textarea>
+          <textarea class="form-control" id="psql_query"
+            name="psql_query">{{ session.get("psql_query", "") }}</textarea>
         </div>
       </div>
 
@@ -46,7 +47,7 @@
         <label for="neo4j_query" class="col-sm-3 col-form-label">Neo4j Query</label>
         <div class="col-sm-9">
           <textarea class="form-control" id="neo4j_query"
-            name="neo4j_query">{{ request.form["neo4j_query"] }}</textarea>
+            name="neo4j_query">{{ session.get("neo4j_query", "") }}</textarea>
         </div>
       </div>
 
