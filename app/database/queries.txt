@@ -21,8 +21,15 @@ INNER JOIN workinvoice_count AS t8 USING(id)
 INNER JOIN worktarget_count AS t9 USING(id)
 INNER JOIN worktype_count AS t10 USING(id);
 
--- Find Table Row Counts in "warehouse"
-select
+-- Find Table Row Counts in "university"
+WITH course_count(id, course_count) AS (SELECT 0, count(*) FROM course),
+prereq_count(id, prereq_count) AS (SELECT 0, count(*) FROM prereq),
+student_count(id, student_count) AS (SELECT 0, count(*) FROM student),
+takes_count(id, takes_count) AS (SELECT 0, count(*) FROM takes)
+SELECT t1.course_count, t2.prereq_count, t3.student_count, t4.takes_count FROM course_count AS t1
+INNER JOIN prereq_count AS t2 USING(id)
+INNER JOIN student_count AS t3 USING(id)
+INNER JOIN takes_count AS t4 USING(id)
 
 
 --

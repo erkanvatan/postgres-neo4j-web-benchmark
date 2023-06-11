@@ -25,6 +25,17 @@
     <form action="{{ url_for("run_benchmark.index") }}" method="post" accept-charset="utf-8">
 
       <div class="row mb-3">
+        <label for="select_database" class="col-sm-3 col-form-label">Select Database</label>
+        <div class="col-sm-9">
+          <select id="select_database" name="select_database" class="form-select" aria-label="Select database">
+            <option {{ session.get("is_default_selected", "selected") }}>Select Database</option>
+            <option {{ session.get("is_warehouse_selected", "") }} value="warehouse">Warehouse</option>
+            <option {{ session.get("is_university_selected", "") }} value="university">University</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row mb-3">
         <label for="psql_query" class="col-sm-3 col-form-label">PostgreSQL Query</label>
         <div class="col-sm-9">
           <textarea class="form-control" id="psql_query" name="psql_query">{{ request.form["psql_query"] }}</textarea>

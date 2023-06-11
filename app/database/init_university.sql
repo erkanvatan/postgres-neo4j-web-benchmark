@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS takes (
 CREATE TABLE IF NOT EXISTS prereq (
     course_id varchar(20) NOT NULL,
     prereq_id varchar(20) NOT NULL,
-    PRIMARY KEY (course_id, prereq_id)
+    PRIMARY KEY (course_id, prereq_id),
+    FOREIGN KEY (course_id) REFERENCES course (course_id),
+    FOREIGN KEY (prereq_id) REFERENCES course (course_id)
 );
 

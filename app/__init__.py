@@ -13,7 +13,7 @@ def create_app(test_config=None):
         SESSION_TYPE='filesystem',
         SESSION_PERMANENENT=True,
         SESSION_COOKIE_SECURE=True,
-        SESSION_COOKIE_HTTPONLY=False,
+        SESSION_COOKIE_HTTPONLY=True,
     )
 
     if test_config is None:
