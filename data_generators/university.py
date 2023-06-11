@@ -1,10 +1,14 @@
 from faker import Faker
 from random import sample
 import csv
+from pathlib import Path
 
+
+# Global Variables
 fake = Faker()
 
 # Parameters
+CSV_DESTINATION_PATH = Path(".").parent.absolute().joinpath("data/university")
 STUDENT_COUNT = 100000
 PREREQ_COUNT = 200000
 RECURSION_DEPTH = 100
@@ -19,12 +23,12 @@ class_codes = set()
 
 
 def generate_prereq():
-    with open('data/university/prereq.csv', 'w', newline='') as file:
+    with open(CSV_DESTINATION_PATH.joinpath("prereq.csv"), 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_ALL)
         field_names = ['course_id', 'prereq_id']
         writer.writerow(field_names)
-        for _ in range(PREREQ_COUNT / RECURSION_DEPTH):
+        for _ in range(PREREQ_COUNT // RECURSION_DEPTH):
             class_code = fake.random_uppercase_letter() + fake.random_uppercase_letter() + fake.random_uppercase_letter()
             while class_code in class_codes:
                 class_code = fake.random_uppercase_letter() + fake.random_uppercase_letter() + fake.random_uppercase_letter()
@@ -41,7 +45,7 @@ def generate_prereq():
 
 
 def generate_course():
-    with open('data/university/course.csv', 'w', newline='') as file:
+    with open(CSV_DESTINATION_PATH.joinpath("course.csv"), 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_ALL)
         field_names = ['course_id', 'title']
@@ -51,7 +55,7 @@ def generate_course():
 
 
 def generate_student():
-    with open('data/university/student.csv', 'w', newline='') as file:
+    with open(CSV_DESTINATION_PATH.joinpath("student.csv"), 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_ALL)
         field_names = ['student_id', 'name']
@@ -61,7 +65,7 @@ def generate_student():
 
 
 def generate_takes():
-    with open('data/university/takes.csv', 'w', newline='') as file:
+    with open(CSV_DESTINATION_PATH.joinpath("takes.csv"), 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_ALL)
         field_names = ['student_id', 'course_id', 'year', 'semester', 'grade']
