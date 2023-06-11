@@ -1,8 +1,8 @@
 import click
 from flask import current_app, g
 from flask.cli import with_appcontext
-import psycopg
 from neo4j import GraphDatabase
+import psycopg
 
 
 def get_psql(dbname: str = None) -> psycopg.Connection:
@@ -34,7 +34,7 @@ def get_neo4j():
         password = current_app.config["NEO4J_DB_PASSWORD"]
 
         g.neo4j = GraphDatabase.driver(f"bolt:/{host}/:{port}",
-                                       auth=(user, password))
+                                       auth=(user, password), database="neo4j")
     g.neo4j.verify_connectivity()
 
     return g.neo4j
@@ -68,7 +68,6 @@ def init_psql():
     psql = get_psql()
     # Autocommit is needed for drop database and create database commands
     psql.autocommit = True
-    psql.execute("DROP TABLE IF EXISTS usertable, benchmark_log")
     psql.execute("DROP DATABASE IF EXISTS testdata")
     psql.execute("CREATE DATABASE testdata")
     psql.execute("DROP DATABASE IF EXISTS warehouse")

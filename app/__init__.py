@@ -1,4 +1,5 @@
 import os
+
 from flask import Flask, flash
 from flask_session import Session
 
@@ -43,15 +44,6 @@ def create_app(test_config=None):
     app.register_blueprint(benchmark_history.bp)
     # Make index the root
     app.add_url_rule('/', endpoint='index')
-
-    # Define a route to test Flask connection
-    @app.route('/test')
-    def test():
-        """Test Flask connection."""
-        from . import db
-        cur = db.get_db()
-        cur.close()
-        return "Server is working.", 200
 
     # Define jinja2 functions
     @app.context_processor

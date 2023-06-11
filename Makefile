@@ -8,7 +8,7 @@ include .env
 .DELETE_ON_ERROR:
 
 # Default target
-all: clean generate-data run
+all: clean up run
 
 #
 # General Targets

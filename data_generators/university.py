@@ -9,11 +9,13 @@ fake = Faker()
 
 # Parameters
 CSV_DESTINATION_PATH = Path(".").parent.absolute().joinpath("data/university")
-STUDENT_COUNT = 100000
+STUDENT_COUNT = 10000
 PREREQ_COUNT = 200000
 RECURSION_DEPTH = 100
-COURSE_PER_STUDENT = 3
+COURSE_PER_STUDENT = 1
+STUDENTS_WITH_COURSE = 10000
 
+assert (COURSE_PER_STUDENT == 1)
 assert (RECURSION_DEPTH >= 1)
 
 # Fields shared accros tables
@@ -70,8 +72,18 @@ def generate_takes():
                             quotechar='"', quoting=csv.QUOTE_ALL)
         field_names = ['student_id', 'course_id', 'year', 'semester', 'grade']
         writer.writerow(field_names)
-        for student_id in student_ids:
+        for student_id in sample(student_ids, k=STUDENTS_WITH_COURSE):
             takes_courses = sample(course_ids, k=COURSE_PER_STUDENT)
+            new_courses = []
+
+            for course_id in takes_courses:
+                class_code = course_id[:course_id.rfind("-")]
+                number_part = course_id[course_id.rfind("-") + 1:]
+                for i in range(100, int(number_part)):
+                    new_courses.append(class_code + "-" + str(i))
+
+            takes_courses = takes_courses + new_courses
+
             writer.writerows([(student_id, course_id, sample(range(2010, 2020), k=1)[0],
                                sample(["fall", "spring"], k=1)[0],
                                round(fake.pyfloat(min_value=2.0, max_value=4.0), 2)) for course_id in takes_courses])

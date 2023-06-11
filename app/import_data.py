@@ -4,9 +4,10 @@ import logging
 from types import LambdaType
 
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from neo4j import exceptions
 import psycopg
 
-from app.db import get_neo4j, get_psql, init_neo4j_command, init_psql
+from app.db import get_neo4j, get_psql, init_neo4j, init_psql
 
 
 # Uncomment following line to print DEBUG logs
@@ -40,9 +41,15 @@ def index():
 
                     if f.get("is_import_neo4j", default="") == "on":
                         if f.get("select_database") == "warehouse":
-                            import_to_neo4j_warehouse()
+                            try:
+                                import_to_neo4j_warehouse()
+                            except exceptions.ConstraintError:
+                                flash("Neo4j database is not empty.", "warning")
                         elif f.get("select_database") == "university":
-                            import_to_neo4j_university()
+                            try:
+                                import_to_neo4j_university()
+                            except exceptions.ConstraintError:
+                                flash("Neo4j database is not empty.", "warning")
                         else:
                             flash("Unknown database option.", "warning")
 
@@ -55,7 +62,7 @@ def index():
                         flash(e, "warning")
 
                 if f.get("is_import_neo4j", default="") == "on":
-                    init_neo4j_command()
+                    init_neo4j()
 
                 flash("Drop finished!", "info")
 
@@ -172,9 +179,10 @@ def import_to_psql_university():
         psql.rollback()
 
     try:
-        csv_to_table(cursor, lambda x: (x[0], x[1], x[2], x[3], x[4]), "takes", "university")
+        csv_to_table(cursor, lambda x: (x[0], x[1], x[2], x[3], float(x[4])), "takes", "university")
         psql.commit()
-    except psycopg.errors.IntegrityError:
+    except psycopg.errors.IntegrityError as e:
+        print(e)
         flash('"takes" table is not empty', "warning")
         psql.rollback()
 
@@ -318,7 +326,7 @@ CREATE (:student {student_id: row.student_id, name: row.name})""",
 LOAD CSV WITH HEADERS FROM 'file:///university/takes.csv' AS row
 MATCH (st:student {student_id: row.student_id})
 MATCH (co:course {course_id: row.course_id})
-CREATE (st)-[:TAKES {year: row.year, semester: row.semester, grade: row.grade} ]->(co)""",
+CREATE (st)-[:TAKES {year: row.year, semester: row.semester, grade: toFloat(row.grade)} ]->(co)""",
                         database_="neo4j")
 
     #  Create "PREREQ" relationship between "course" and "course"

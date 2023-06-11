@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS takes (
     course_id varchar(20) NOT NULL,
     year varchar(5) NOT NULL,
     semester varchar(10) NOT NULL,
-    grade varchar(5) NOT NULL,
+    grade numeric NOT NULL,
     PRIMARY KEY (student_id, course_id),
     FOREIGN KEY (student_id) REFERENCES student (student_id),
     FOREIGN KEY (course_id) REFERENCES course (course_id)

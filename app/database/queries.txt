@@ -31,6 +31,10 @@ INNER JOIN prereq_count AS t2 USING(id)
 INNER JOIN student_count AS t3 USING(id)
 INNER JOIN takes_count AS t4 USING(id)
 
+--
+-- "warehouse" db
+--
+
 
 --
 -- Short query, work price
@@ -68,3 +72,69 @@ INNER JOIN item ON useditem.itemId = item.id GROUP BY work.id;
 MATCH (wt:worktype)-[h:WORKHOURS]->(w:work)-[u:USED_ITEM]->(i:item) WITH
 SUM((h.hours*h.discount*wt.price)+(u.amount*u.discount*i.purchaseprice)) as price,
 w RETURN w.workId as workId, price
+
+--
+-- "university" db
+--
+
+--
+-- Find prerequisites recursively
+--
+
+-- SQL
+
+-- Defined key with LIKE
+WITH RECURSIVE rec_prereq(course_id, prereq_id) AS (
+SELECT course_id, prereq_id
+FROM prereq WHERE course_id like '%200%'
+UNION
+SELECT rec_prereq.course_id, prereq.prereq_id
+FROM rec_prereq, prereq
+WHERE rec_prereq.prereq_id = prereq.course_id)
+SELECT * FROM rec_prereq ORDER BY course_id, prereq_id;
+
+-- Cypher
+
+-- Defined key with LIKE
+MATCH (pre:course)-[:PREREQ *1..]->(co:course) WHERE pre.course_id CONTAINS "200" RETURN pre, co
+
+--
+-- Find sum of grades
+--
+
+-- 12 iterations
+
+-- SQL
+SELECT year, sum(grade) FROM takes INNER JOIN student USING (student_id)
+INNER JOIN course USING (course_id) WHERE name LIKE 'A%' AND title LIKE '%engineer%'
+GROUP BY year;
+
+
+-- Cypher
+MATCH (st:student)-[takes:TAKES]->(co:course)
+WHERE st.name STARTS WITH "A" AND co.title CONTAINS "engineer"
+RETURN takes.year, sum(takes.grade)
+
+--
+--  Names of the students who have successfully completed all the prerequisites for a given course
+--
+
+-- SQL
+
+SELECT s.name FROM student s
+JOIN takes t ON s.student_id = t.student_id
+JOIN course c ON t.course_id = c.course_id
+JOIN prereq p ON c.course_id = p.course_id
+LEFT JOIN takes t2 ON s.student_id = t2.student_id AND p.prereq_id = t2.course_id
+WHERE t2.grade IS NOT NULL AND c.course_id LIKE '%110%'
+GROUP BY s.student_id, s.name
+HAVING COUNT(p.prereq_id) = COUNT(t2.grade);
+
+
+-- Cypher
+MATCH (s:student)-[t:TAKES]->(c:course) WHERE c.course_id CONTAINS "110"
+OPTIONAL MATCH (c)-[:PREREQ]->(p:course)
+WHERE NOT EXISTS((p)<-[:TAKES]-(s))
+WITH s, collect(p) AS prereqCourses
+WHERE size(prereqCourses) = 0
+RETURN s.name

@@ -44,7 +44,7 @@ services:
     environment:
       - NEO4J_AUTH=${NEO4J_AUTH}
       - NEO4J_db_import_csv_buffer__size=4194304
-      - NEO4J_db_memory_transaction_total_max=4GiB
+      - NEO4J_db_memory_transaction_total_max=6GiB
       - NEO4J_server_memory_heap_initial__size=4GiB
       - NEO4J_server_memory_heap_max__size=6GiB
     # healthcheck taken from : https://stackoverflow.com/a/74689805

@@ -146,9 +146,11 @@ def measure_query_time_sql(sql_query: str, db_name: str, iteration_count: int) -
     psql = get_psql(db_name)
 
     for i in range(iteration_count):
+        print("PSQL Query Iteration: ", i)
         start_time_sec = time.time()
 
         res = psql.execute(sql_query).fetchall()
+        psql.commit()
 
         end_time_sec = time.time()
 
@@ -165,17 +167,10 @@ def measure_query_time_neo4j(neo4j_query: str, db_name: str, iteration_count: in
     neo4j = get_neo4j()
 
     for i in range(iteration_count):
-        #  start_time_sec = time.time()
+        print("Neo4j Query Iteration: ", i)
+        records, summary, _ = neo4j.execute_query(neo4j_query, database_=db_name)
 
-        records, summary, keys = neo4j.execute_query(neo4j_query, database_=db_name)
-
-        #  end_time_sec = time.time()
-
-        #  runtimes.append(round((end_time_sec - start_time_sec) * 1000))
-        print(summary.result_available_after)
-        print(summary.result_consumed_after)
         runtimes.append(summary.result_consumed_after)
-
         nrows.append(len(records))
 
     return (runtimes, nrows)
