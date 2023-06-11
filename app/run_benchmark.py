@@ -1,9 +1,20 @@
 import logging
 import time
 
-from flask import Blueprint, flash, render_template, request, session
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 import neo4j.exceptions
 import psycopg
+from psycopg.rows import dict_row
 
 from app.db import get_neo4j, get_psql
 
@@ -15,10 +26,47 @@ bp = Blueprint('run_benchmark', __name__, url_prefix='/run-benchmark')
 
 
 # ROUTES
+@bp.route('/get-query/<int:saved_query_id>')
+def get_query(saved_query_id: int):
+    """Find query according to the given id in GET request,
+    return JSON object containing the query."""
+    psql = get_psql()
+    psql.row_factory = dict_row
+
+    try:
+        query = psql.execute("SELECT * FROM saved_query WHERE saved_query_id = %s", (saved_query_id,)).fetchone()
+        psql.commit()
+
+        return jsonify(query)
+    except psycopg.errors.Error as e:
+        print(e)
+        abort(404)
+
+
 @bp.route('/', methods=('GET', 'POST'))
 def index():
     """Run Benchmark tab index page."""
     is_error = False
+    saved_queries = []
+
+    try:
+        psql = get_psql()
+        psql.row_factory = dict_row
+        queries = psql.execute("SELECT * FROM saved_query").fetchall()
+        psql.commit()
+
+        for query in queries:
+            row = {}
+            row["saved_query_id"] = query["saved_query_id"]
+            row["selected_database"] = query["selected_database"]
+            row["psql_query"] = query["psql_query"]
+            row["neo4j_query"] = query["neo4j_query"]
+            row["iteration_count"] = query["iteration_count"]
+            saved_queries.append(row)
+
+    except psycopg.errors.Error as e:
+        flash(e, "warning")
+        is_error = True
 
     if request.method == "POST":
         f = request.form
@@ -49,6 +97,21 @@ def index():
             flash("You must enter a Neo4j query.", "warning")
             is_error = True
 
+        if f.get("save_button") is not None:
+            try:
+                psql = get_psql()
+                psql.row_factory = dict_row
+
+                psql.execute("""INSERT INTO saved_query(selected_database, psql_query, neo4j_query, iteration_count)
+                             VALUES (%s, %s, %s, %s)""", (f["select_database"], f["psql_query"], f["neo4j_query"],
+                                                          f["iteration_count"]))
+                psql.commit()
+                return redirect(url_for("run_benchmark.index"))
+
+            except psycopg.errors.Error as e:
+                flash(e, "warning")
+                is_error = True
+
         if not is_error:
 
             iteration_count = int(f["iteration_count"])
@@ -73,7 +136,7 @@ def index():
                     neo4j.exceptions.Neo4jError, neo4j.exceptions.CypherTypeError) as e:
                 flash(e, "warning")
 
-    return render_template("tabs/run_benchmark.html")
+    return render_template("tabs/run_benchmark.html", saved_queries=saved_queries)
 
 
 def measure_query_time_sql(sql_query: str, db_name: str, iteration_count: int) -> tuple:

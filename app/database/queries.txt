@@ -45,6 +45,10 @@ GROUP BY work.id
 -- Cypher
 MATCH (wt:worktype)-[h:WORKHOURS]->(w:work) WITH SUM(h.hours*h.discount*wt.price) as price, w RETURN w.workId as workId, price;
 
+-- Cypher CALL
+MATCH (w:work) CALL { WITH w MATCH (wt:worktype)-[h:WORKHOURS]->(w) RETURN SUM((h.hours*h.discount*wt.price)) as price}
+RETURN w.workId as workId, price;
+
 --
 -- Long query, work price
 --

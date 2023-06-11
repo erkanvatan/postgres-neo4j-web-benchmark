@@ -24,3 +24,11 @@ CREATE TABLE IF NOT EXISTS benchmark_log (
     neo4j_nrows integer[] NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS saved_query (
+    saved_query_id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    selected_database text NOT NULL,
+    psql_query text NOT NULL,
+    neo4j_query text NOT NULL,
+    iteration_count integer NOT NULL
+);
+
