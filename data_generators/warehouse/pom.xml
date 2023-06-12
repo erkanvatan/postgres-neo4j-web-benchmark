@@ -79,53 +79,13 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>Maven Central</id>
-            <name>Central Repository</name>
-            <url>http://central.maven.org/maven2/</url>
-        </repository>
-    </repositories>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <tinkerpop.version>3.4.2</tinkerpop.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20180813</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.javafaker</groupId>
-            <artifactId>javafaker</artifactId>
-            <version>0.18</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-core</artifactId>
-            <version>${tinkerpop.version}</version>
-        </dependency>
-        <!-- when using Gremlin Server or Remote Gremlin Provider a driver is required -->
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-driver</artifactId>
-            <version>${tinkerpop.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.2.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-runtime</artifactId>
-            <version>4.7.2</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql-->
         <dependency>
             <groupId>org.postgresql</groupId>
