@@ -1,0 +1,94 @@
+# https://taskfile.dev
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  MAVEN_IMAGE: maven:3.9.2-eclipse-temurin-8
+  JRE_IMAGE: eclipse-temurin:8u372-b07-jre-alpine
+  ALPINE_IMAGE: alpine:3.18.0
+  # Run containers that write into the repo as the current user, so files stay deletable
+  USER_ID:
+    sh: echo "$(id -u):$(id -g)"
+  WAREHOUSE_DIR: data_generators/warehouse
+  WAREHOUSE_JAR: warehouse_data_generator-1.0-SNAPSHOT.jar
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  setup:
+    desc: Create .env from .env.example
+    cmds:
+      - cp .env.example .env
+    status:
+      - test -f .env
+
+  up:
+    desc: Build and start the app, PostgreSQL, Neo4j and pgAdmin
+    deps: [setup]
+    cmds:
+      - docker compose up -d --build --wait
+
+  down:
+    desc: Stop all services and keep their data
+    cmds:
+      - docker compose down
+
+  clean:
+    desc: Stop all services, delete database volumes and build output
+    cmds:
+      - docker compose down --volumes
+      - rm -rf ./flask_session ./app/__pycache__
+      # Maven runs as root, so its root-owned build output is deleted from a container
+      - >-
+        docker run --rm -v "$PWD/{{.WAREHOUSE_DIR}}":/src {{.ALPINE_IMAGE}}
+        find /src/target /src/dependency-reduced-pom.xml -delete || true
+
+  logs:
+    desc: Follow the app logs
+    cmds:
+      - docker compose logs -f app
+
+  db:init:
+    desc: Drop and recreate the PostgreSQL databases and empty Neo4j
+    cmds:
+      - docker compose exec app flask --app app init-psql
+      - docker compose exec app flask --app app init-neo4j
+
+  generate:
+    desc: Generate both datasets into ./data
+    cmds:
+      - task: generate:warehouse
+      - task: generate:university
+
+  generate:warehouse:
+    desc: Build and run the Java warehouse generator (writes data/warehouse/*.csv)
+    deps: [up]
+    cmds:
+      - mkdir -p data/warehouse
+      - >-
+        docker run --rm
+        -v "$PWD/{{.WAREHOUSE_DIR}}":/usr/src/app -v "${PROJECT_NAME}-maven-repo":/root/.m2
+        -w /usr/src/app {{.MAVEN_IMAGE}} mvn -q clean package
+      - cp {{.WAREHOUSE_DIR}}/target/{{.WAREHOUSE_JAR}} data/
+      - >-
+        docker run --rm --user {{.USER_ID}} --network "${PROJECT_NAME}_default" --env-file .env
+        -v "$PWD/data":/usr/src/app -w /usr/src/app {{.JRE_IMAGE}} java -jar {{.WAREHOUSE_JAR}}
+      # The generator leaves its own "warehouse" schema behind, reset it to the app schema
+      - task: db:init
+
+  generate:university:
+    desc: Run the Python university generator (writes data/university/*.csv)
+    deps: [up]
+    cmds:
+      - mkdir -p data/university
+      - docker compose exec --user {{.USER_ID}} app python data_generators/university.py
+
+  sass:
+    desc: Watch SASS files and compile them into CSS
+    cmds:
+      - sass --watch ./app/sass:./app/static/styles --style expanded --no-source-map
