@@ -1,8 +1,7 @@
-click
-Flask
-Werkzeug
-Flask_Session
-pyopenssl
-psycopg
-neo4j
-faker
+click==8.1.3
+Flask==2.3.2
+Werkzeug==2.3.6
+Flask-Session==0.5.0
+psycopg[binary]==3.1.9
+neo4j==5.9.0
+Faker==18.10.1
