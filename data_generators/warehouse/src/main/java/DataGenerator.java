@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DataGenerator {
@@ -820,8 +821,7 @@ public class DataGenerator {
                 targetIndex = targetIndex + iterationsPerThread * targetFactor;
             }
             executor.shutdown();
-            while (!executor.isTerminated()) {
-            }
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             long endTimeInMilliseconds = System.currentTimeMillis();
             Timestamp endTime = new Timestamp(endTimeInMilliseconds);
             long elapsedTimeMilliseconds = endTimeInMilliseconds - startTimeInMilliseconds;
@@ -878,8 +878,7 @@ public class DataGenerator {
                 invoiceIndex = invoiceIndex + sequentialInvoices;
             }
             executor.shutdown();
-            while (!executor.isTerminated()) {
-            }
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             long endTimeInMilliseconds = System.currentTimeMillis();
             Timestamp endTime = new Timestamp(endTimeInMilliseconds);
             long elapsedTimeMilliseconds = endTimeInMilliseconds - startTimeInMilliseconds;
@@ -919,8 +918,7 @@ public class DataGenerator {
                 workIndex = workIndex + iterationsPerThread;
             }
             executor.shutdown();
-            while (!executor.isTerminated()) {
-            }
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             long endTimeInMilliseconds = System.currentTimeMillis();
             Timestamp endTime = new Timestamp(endTimeInMilliseconds);
             long elapsedTimeMilliseconds = endTimeInMilliseconds - startTimeInMilliseconds;
@@ -963,8 +961,7 @@ public class DataGenerator {
                 workTypeIndex = workTypeIndex + workTypeCount;
             }
             executor.shutdown();
-            while (!executor.isTerminated()) {
-            }
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             long endTimeInMilliseconds = System.currentTimeMillis();
             Timestamp endTime = new Timestamp(endTimeInMilliseconds);
             long elapsedTimeMilliseconds = endTimeInMilliseconds - startTimeInMilliseconds;

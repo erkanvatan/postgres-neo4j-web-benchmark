@@ -19,7 +19,7 @@ public class Main {
 
         String mysql_db_url = "jdbc:postgresql://" + System.getenv("POSTGRES_HOST") + ":5432/"; // DB Connection URL for PostgreSQL
         String db_driver = "org.postgresql.Driver";
-        String db_username = "postgres";
+        String db_username = System.getenv("POSTGRES_USER");
         String db_password = System.getenv("POSTGRES_PASSWORD");
 
         db_settings[0] = db_driver;
