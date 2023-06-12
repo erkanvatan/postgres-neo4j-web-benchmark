@@ -1,5 +1,26 @@
 name: ${PROJECT_NAME}
 services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - FLASK_HOST=0.0.0.0
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000')" || exit 1
+      interval: 3s
+      timeout: 10s
+      retries: 20
+      start_period: 3s
   postgresql:
     image: postgres:15.2
     ports:
@@ -10,17 +31,15 @@ services:
       - PGUSER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-    # volumes:
-    #   - ./.sql:/docker-entrypoint-initdb.d
     # healthcheck taken from : https://stackoverflow.com/a/72175755
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-U", "${POSTGRES_USER}" ,"-d", "postgres"]
+      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       interval: 3s
       timeout: 10s
       retries: 20
       start_period: 3s
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:7.2
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
@@ -47,19 +66,14 @@ services:
       - NEO4J_db_memory_transaction_total_max=6GiB
       - NEO4J_server_memory_heap_initial__size=4GiB
       - NEO4J_server_memory_heap_max__size=6GiB
-    # healthcheck taken from : https://stackoverflow.com/a/74689805
+      # LOAD CSV reads the generated CSV files straight from ./data
+      - NEO4J_server_directories_import=/csv
     volumes:
-      - ./.neo4j:/var/lib/neo4j/import:rw
+      - ./data:/csv:ro
+    # healthcheck taken from : https://stackoverflow.com/a/74689805
     healthcheck:
       test: wget http://localhost:7474 || exit 1
       interval: 3s
       timeout: 10s
       retries: 20
       start_period: 3s
-  dummy:
-    image: hello-world:linux
-    depends_on:
-      postgresql:
-        condition: service_healthy
-      neo4j:
-        condition: service_healthy

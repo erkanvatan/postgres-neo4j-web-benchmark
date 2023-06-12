@@ -1,0 +1,8 @@
+*
+!requirements.txt
+!app.py
+!app/
+!instance/
+!data_generators/university.py
+app/sass
+app/__pycache__

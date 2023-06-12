@@ -20,5 +20,3 @@ target
 lib
 dependency-reduced-pom.xml
 
-# Docker intermediary files
-.neo4j
