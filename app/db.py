@@ -33,9 +33,8 @@ def get_neo4j():
         user = current_app.config["NEO4J_DB_USER"]
         password = current_app.config["NEO4J_DB_PASSWORD"]
 
-        g.neo4j = GraphDatabase.driver(f"bolt:/{host}/:{port}",
-                                       auth=(user, password), database="neo4j")
-    g.neo4j.verify_connectivity()
+        g.neo4j = GraphDatabase.driver(f"bolt://{host}:{port}", auth=(user, password))
+        g.neo4j.verify_connectivity()
 
     return g.neo4j
 
@@ -88,14 +87,18 @@ def init_psql():
 def init_psql_command():
     """Drop and recreate tables in PostgreSQL."""
     init_psql()
-    click.echo('Initialized "psqlvsneo4j", "testdata" and "warehouse" databases.')
+    click.echo('Initialized "psqlvsneo4j", "testdata", "warehouse" and "university" databases.')
 
 
 def init_neo4j():
-    """Drop records in Neo4j."""
-    # Truncate nodes
+    """Drop all nodes and constraints in Neo4j."""
     neo4j = get_neo4j()
-    neo4j.execute_query("MATCH (n) DETACH DELETE (n)")
+    # Delete in batches so large graphs do not hit the transaction memory limit.
+    # "IN TRANSACTIONS" needs an auto-commit transaction, which session.run provides.
+    with neo4j.session(database="neo4j") as session:
+        session.run("MATCH (n) CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF 10000 ROWS").consume()
+    for constraint in neo4j.execute_query("SHOW CONSTRAINTS YIELD name").records:
+        neo4j.execute_query(f"DROP CONSTRAINT {constraint['name']}")
     click.echo('Initialized neo4j database.')
 
 

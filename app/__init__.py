@@ -12,8 +12,7 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY='dev',
         SESSION_TYPE='filesystem',
-        SESSION_PERMANENENT=True,
-        SESSION_COOKIE_SECURE=True,
+        SESSION_PERMANENT=True,
         SESSION_COOKIE_HTTPONLY=True,
     )
 
