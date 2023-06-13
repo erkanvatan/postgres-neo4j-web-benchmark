@@ -25,15 +25,15 @@
         <th scope="col">Query</th>
         <th scope="col">Row Count</th>
         <!--<th scope="col">Runtimes (ms)</th>-->
-        <th scope="col">Min Runtime</th>
-        <th scope="col">Max Runtime</th>
-        <th scope="col">Avg Runtime</th>
+        <th scope="col">Min (ms)</th>
+        <th scope="col">Median (ms)</th>
+        <th scope="col">Max (ms)</th>
         <th scope="col">Query</th>
         <th scope="col">Row Count</th>
         <!--<th scope="col">Runtimes (ms)</th>-->
-        <th scope="col">Min Runtime</th>
-        <th scope="col">Max Runtime</th>
-        <th scope="col">Avg Runtime</th>
+        <th scope="col">Min (ms)</th>
+        <th scope="col">Median (ms)</th>
+        <th scope="col">Max (ms)</th>
       </tr>
     </thead>
     <tbody>
@@ -45,14 +45,14 @@
         <td scope="col">{{ row["psql_nrows"] }}</td>
         <!--<td scope="col">{{ row["psql_runtimes"] }}</td>-->
         <td scope="col">{{ row["psql_min"] }}</td>
+        <td scope="col">{{ row["psql_median"] }}</td>
         <td scope="col">{{ row["psql_max"] }}</td>
-        <td scope="col">{{ row["psql_avg"] }}</td>
         <td scope="col">{{ row["neo4j_query"] }}</td>
         <td scope="col">{{ row["neo4j_nrows"] }}</td>
         <!--<td scope="col">{{ row["neo4j_runtimes"] }}</td>-->
         <td scope="col">{{ row["neo4j_min"] }}</td>
+        <td scope="col">{{ row["neo4j_median"] }}</td>
         <td scope="col">{{ row["neo4j_max"] }}</td>
-        <td scope="col">{{ row["neo4j_avg"] }}</td>
       </tr>
       {% endfor %}
 

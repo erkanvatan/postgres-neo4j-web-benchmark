@@ -1,4 +1,5 @@
 import logging
+from statistics import median
 
 from flask import Blueprint, flash, render_template
 import psycopg
@@ -23,7 +24,7 @@ def index():
     try:
         psql = get_psql()
         psql.row_factory = dict_row
-        logs = psql.execute("SELECT * FROM benchmark_log").fetchall()
+        logs = psql.execute("SELECT * FROM benchmark_log ORDER BY benchmark_log_id DESC").fetchall()
         psql.commit()
 
         for log in logs:
@@ -35,22 +36,12 @@ def index():
             row["psql_nrows"] = log["psql_nrows"][0]
             row["neo4j_nrows"] = log["neo4j_nrows"][0]
 
-            psql_runtimes = log["psql_runtimes"]
-            row["psql_runtimes"] = ','.join(map(str, psql_runtimes))
-
-            sort = sorted(psql_runtimes)
-            sort = sort[1: -1]
-            row["psql_min"] = sort[0]
-            row["psql_max"] = sort[-1]
-            row["psql_avg"] = sum(sort) / len(sort)
-
-            neo4j_runtimes = log["neo4j_runtimes"]
-            row["neo4j_runtimes"] = ','.join(map(str, neo4j_runtimes))
-            sort = sorted(neo4j_runtimes)
-            sort = sort[1: -1]
-            row["neo4j_min"] = sort[0]
-            row["neo4j_max"] = sort[-1]
-            row["neo4j_avg"] = sum(sort) / len(sort)
+            for db in ("psql", "neo4j"):
+                runtimes = log[f"{db}_runtimes"]
+                row[f"{db}_runtimes"] = ", ".join(map(str, runtimes))
+                row[f"{db}_min"] = min(runtimes)
+                row[f"{db}_median"] = round(median(runtimes), 2)
+                row[f"{db}_max"] = max(runtimes)
 
             rows.append(row)
 
