@@ -27,7 +27,7 @@
         <label for="select_query" class="col-sm-3 col-form-label">Select Query</label>
         <div class="col-sm-9">
           <select id="select_query" name="select_query" class="form-select" aria-label="Select Query">
-            <option>Select Query</option>
+            <option value="">Select Query</option>
             {% for query in saved_queries %}
             <option value="{{ query["saved_query_id"] }}">{{ query["saved_query_id"] }} - {{ query["psql_query"][:60] }}
             </option>
@@ -66,10 +66,10 @@
       </div>
 
       <div class="row mb-3">
-        <label for="iteration_count" class="col-sm-3 col-form-label">Iteration Count (3-12)</label>
+        <label for="iteration_count" class="col-sm-3 col-form-label">Iteration Count (1-12)</label>
 
         <div class="col-sm-8 bg-dark-subtle mx-2 rounded">
-          <input type="range" min="3" max="12" value="{{ session.get("iteration_count", 3) }}" class="form-range "
+          <input type="range" min="1" max="12" value="{{ session.get("iteration_count", 3) }}" class="form-range "
             id="iteration_count" name="iteration_count">
         </div>
       </div>
@@ -103,18 +103,20 @@
   }
 
   async function fillFormFromSelection() {
+    if (!querySelector.value) {
+      return;
+    }
     try {
-      // let response = await fetch(
-      //   "{{ url_for(request.endpoint, **request.view_args) }}" + "/get-query/6"
-      // );
       let response = await fetch(
-        '{{ url_for("run_benchmark.index") }}' + "/get-query/" + querySelector.value
+        '{{ url_for("run_benchmark.index") }}' + "get-query/" + querySelector.value
       );
+      if (!response.ok) {
+        throw new Error(response.status);
+      }
       let query = await response.json();
-      console.log(query);
       databaseSelector.value = query["selected_database"];
-      psqlQuery.textContent = query["psql_query"];
-      neo4jQuery.textContent = query["neo4j_query"];
+      psqlQuery.value = query["psql_query"];
+      neo4jQuery.value = query["neo4j_query"];
       iterationCount.value = query["iteration_count"];
     } catch (err) {
       console.error("Could not fetch the query info: ", err);

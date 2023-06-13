@@ -24,6 +24,10 @@ from app.db import get_neo4j, get_psql
 
 bp = Blueprint('run_benchmark', __name__, url_prefix='/run-benchmark')
 
+DATABASES = ("warehouse", "university")
+MIN_ITERATIONS = 1
+MAX_ITERATIONS = 12
+
 
 # ROUTES
 @bp.route('/get-query/<int:saved_query_id>')
@@ -36,11 +40,13 @@ def get_query(saved_query_id: int):
     try:
         query = psql.execute("SELECT * FROM saved_query WHERE saved_query_id = %s", (saved_query_id,)).fetchone()
         psql.commit()
+    except psycopg.errors.Error:
+        abort(500)
 
-        return jsonify(query)
-    except psycopg.errors.Error as e:
-        print(e)
+    if query is None:
         abort(404)
+
+    return jsonify(query)
 
 
 @bp.route('/', methods=('GET', 'POST'))
@@ -73,20 +79,13 @@ def index():
 
         session["psql_query"] = f["psql_query"]
         session["neo4j_query"] = f["neo4j_query"]
-        if f.get("select_database") is None or f.get("select_database") == "Select Database":
+        session["iteration_count"] = f.get("iteration_count", "")
+        selected_database = f.get("select_database")
+        session["is_default_selected"] = "" if selected_database in DATABASES else "selected"
+        session["is_warehouse_selected"] = "selected" if selected_database == "warehouse" else ""
+        session["is_university_selected"] = "selected" if selected_database == "university" else ""
+        if selected_database not in DATABASES:
             flash("You must select a database", "warning")
-            is_error = True
-
-        if f.get("select_database") == "warehouse":
-            session["is_default_selected"] = ""
-            session["is_warehouse_selected"] = "selected"
-            session["is_university_selected"] = ""
-        elif f.get("select_database") == "university":
-            session["is_default_selected"] = ""
-            session["is_warehouse_selected"] = ""
-            session["is_university_selected"] = "selected"
-        else:
-            flash("Unknown database option.", "warning")
             is_error = True
 
         if not f["psql_query"]:
@@ -97,24 +96,31 @@ def index():
             flash("You must enter a Neo4j query.", "warning")
             is_error = True
 
-        if f.get("save_button") is not None:
+        try:
+            iteration_count = int(f.get("iteration_count", ""))
+            if not MIN_ITERATIONS <= iteration_count <= MAX_ITERATIONS:
+                raise ValueError
+        except ValueError:
+            flash(f"Iteration count must be a number from {MIN_ITERATIONS} to {MAX_ITERATIONS}.", "warning")
+            is_error = True
+
+        if f.get("save_button") is not None and not is_error:
             try:
                 psql = get_psql()
                 psql.row_factory = dict_row
 
                 psql.execute("""INSERT INTO saved_query(selected_database, psql_query, neo4j_query, iteration_count)
                              VALUES (%s, %s, %s, %s)""", (f["select_database"], f["psql_query"], f["neo4j_query"],
-                                                          f["iteration_count"]))
+                                                          iteration_count))
                 psql.commit()
+                flash("Query saved!", "info")
                 return redirect(url_for("run_benchmark.index"))
 
             except psycopg.errors.Error as e:
                 flash(e, "warning")
                 is_error = True
 
-        if not is_error:
-
-            iteration_count = int(f["iteration_count"])
+        elif not is_error:
             try:
                 psql_runtimes, psql_nrows = measure_query_time_sql(f["psql_query"],
                                                                    f["select_database"], iteration_count)
@@ -131,12 +137,16 @@ def index():
                 flash("Benchmark finished!", "info")
             except psycopg.Error as e:
                 flash(e, "warning")
-            except (neo4j.exceptions.ClientError, neo4j.exceptions.ConstraintError, neo4j.exceptions.CypherSyntaxError,
-                    neo4j.exceptions.DatabaseError, neo4j.exceptions.DriverError, neo4j.exceptions.Forbidden,
-                    neo4j.exceptions.Neo4jError, neo4j.exceptions.CypherTypeError) as e:
+            except (neo4j.exceptions.Neo4jError, neo4j.exceptions.DriverError) as e:
                 flash(e, "warning")
 
     return render_template("tabs/run_benchmark.html", saved_queries=saved_queries)
+
+
+# Both databases are timed the same way: wall-clock time on the client, from sending the query
+# until every row is fetched and the transaction is committed.
+def elapsed_ms(start: float) -> float:
+    return round((time.perf_counter() - start) * 1000, 2)
 
 
 def measure_query_time_sql(sql_query: str, db_name: str, iteration_count: int) -> tuple:
@@ -145,16 +155,11 @@ def measure_query_time_sql(sql_query: str, db_name: str, iteration_count: int) -
 
     psql = get_psql(db_name)
 
-    for i in range(iteration_count):
-        print("PSQL Query Iteration: ", i)
-        start_time_sec = time.time()
-
+    for _ in range(iteration_count):
+        start = time.perf_counter()
         res = psql.execute(sql_query).fetchall()
         psql.commit()
-
-        end_time_sec = time.time()
-
-        runtimes.append(round((end_time_sec - start_time_sec) * 1000))
+        runtimes.append(elapsed_ms(start))
         nrows.append(len(res))
 
     return (runtimes, nrows)
@@ -166,11 +171,10 @@ def measure_query_time_neo4j(neo4j_query: str, db_name: str, iteration_count: in
 
     neo4j = get_neo4j()
 
-    for i in range(iteration_count):
-        print("Neo4j Query Iteration: ", i)
-        records, summary, _ = neo4j.execute_query(neo4j_query, database_=db_name)
-
-        runtimes.append(summary.result_consumed_after)
+    for _ in range(iteration_count):
+        start = time.perf_counter()
+        records, _, _ = neo4j.execute_query(neo4j_query, database_=db_name)
+        runtimes.append(elapsed_ms(start))
         nrows.append(len(records))
 
     return (runtimes, nrows)
