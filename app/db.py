@@ -77,6 +77,7 @@ def init_psql():
 
     # Initialize databases
     import_sql('database/init_psqlvsneo4j.sql')
+    import_sql('database/init_saved_queries.sql')
     import_sql('database/init_warehouse.sql', 'warehouse')
     import_sql('database/init_testdata.sql', 'testdata')
     import_sql('database/init_university.sql', 'university')
