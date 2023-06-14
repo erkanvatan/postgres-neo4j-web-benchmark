@@ -28,32 +28,28 @@ def index():
             flash("You must at least check one box", "warning")
         else:
             if f.get("import_button") is not None:
-                if f.get("select_database") is None or f.get("select_database") == "Select Database":
+                db_name = f.get("select_database")
+                if db_name not in PSQL_TABLES:
                     flash("You must select a database", "warning")
                 else:
-                    if f.get("is_import_psql", default="") == "on":
-                        if f.get("select_database") == "warehouse":
-                            import_to_psql_warehouse()
-                        elif f.get("select_database") == "university":
-                            import_to_psql_university()
-                        else:
-                            flash("Unknown database option.", "warning")
+                    is_ok = True
+                    try:
+                        if f.get("is_import_psql", default="") == "on":
+                            is_ok = import_to_psql(db_name, PSQL_TABLES[db_name]) and is_ok
+                        if f.get("is_import_neo4j", default="") == "on":
+                            NEO4J_IMPORTERS[db_name]()
+                    except exceptions.ConstraintError:
+                        flash("Neo4j database is not empty.", "warning")
+                        is_ok = False
+                    except FileNotFoundError:
+                        flash(f'CSV files for "{db_name}" not found. Run "task generate" first.', "warning")
+                        is_ok = False
+                    except exceptions.ClientError as e:
+                        flash(e.message, "warning")
+                        is_ok = False
 
-                    if f.get("is_import_neo4j", default="") == "on":
-                        if f.get("select_database") == "warehouse":
-                            try:
-                                import_to_neo4j_warehouse()
-                            except exceptions.ConstraintError:
-                                flash("Neo4j database is not empty.", "warning")
-                        elif f.get("select_database") == "university":
-                            try:
-                                import_to_neo4j_university()
-                            except exceptions.ConstraintError:
-                                flash("Neo4j database is not empty.", "warning")
-                        else:
-                            flash("Unknown database option.", "warning")
-
-                    flash("Import finished!", "info")
+                    if is_ok:
+                        flash("Import finished!", "info")
             elif f.get("drop_button") is not None:
                 if f.get("is_import_psql", default="") == "on":
                     try:
@@ -82,116 +78,22 @@ def csv_to_table(cursor: psycopg.Cursor, record_parser: LambdaType, table_name: 
                 copy.write_row(record)
 
 
-def import_to_psql_warehouse():
-    """Import data into PostgreSQL "warehouse" database using CSV files."""
-    psql = get_psql("warehouse")
+def import_to_psql(db_name: str, tables: list) -> bool:
+    """Import CSV files into the given PostgreSQL database, return False if a table was not empty."""
+    psql = get_psql(db_name)
     cursor = psql.cursor()
+    is_ok = True
 
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], x[2]), "customer", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"customer" table is not empty', "warning")
-        psql.rollback()
+    for table_name, record_parser in tables:
+        try:
+            csv_to_table(cursor, record_parser, table_name, db_name)
+            psql.commit()
+        except psycopg.errors.IntegrityError:
+            flash(f'"{table_name}" table is not empty', "warning")
+            psql.rollback()
+            is_ok = False
 
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2]), x[3], float(x[4]), float(x[5]),
-                                        True if x[6] == "true" else False), "item", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"item" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], int(x[2])), "worktype", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"worktype" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), int(x[2]), int(x[4])), "invoice", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"invoice" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1], x[2], int(x[3])), "target", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"target" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), x[1]), "work", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"work" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1])), "workinvoice", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"workinvoice" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1])), "worktarget", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"worktarget" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), float(x[1]), int(x[2]), int(x[3])), "useditem", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"useditem" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (int(x[0]), int(x[1]), float(x[2]), int(x[3])), "workhours", "warehouse")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"workhours" table is not empty', "warning")
-        psql.rollback()
-
-
-def import_to_psql_university():
-    """Import data into PostgreSQL "university" database using CSV files."""
-    psql = get_psql("university")
-    cursor = psql.cursor()
-
-    try:
-        csv_to_table(cursor, lambda x: (x[0], x[1]), "course", "university")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"course" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (x[0], x[1]), "student", "university")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"student" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (x[0], x[1], x[2], x[3], float(x[4])), "takes", "university")
-        psql.commit()
-    except psycopg.errors.IntegrityError as e:
-        print(e)
-        flash('"takes" table is not empty', "warning")
-        psql.rollback()
-
-    try:
-        csv_to_table(cursor, lambda x: (x[0], x[1]), "prereq", "university")
-        psql.commit()
-    except psycopg.errors.IntegrityError:
-        flash('"prereq" table is not empty', "warning")
-        psql.rollback()
+    return is_ok
 
 
 def import_to_neo4j_warehouse():
@@ -235,12 +137,12 @@ CREATE (:work {id: toInteger(row.id), name: row.name})""",
                         database_="neo4j")
 
     # Create indexes for fast search
-    neo4j.execute_query("CREATE CONSTRAINT customer_pk FOR (cust:customer) REQUIRE cust.id IS UNIQUE")
-    neo4j.execute_query("CREATE CONSTRAINT item_pk FOR (it:item) REQUIRE it.id IS UNIQUE")
-    neo4j.execute_query("CREATE CONSTRAINT worktype_pk FOR (wt:worktype) REQUIRE wt.id IS UNIQUE")
-    neo4j.execute_query("CREATE CONSTRAINT invoice_pk FOR (in:invoice) REQUIRE in.id IS UNIQUE")
-    neo4j.execute_query("CREATE CONSTRAINT target_pk FOR (tar:target) REQUIRE tar.id IS UNIQUE")
-    neo4j.execute_query("CREATE CONSTRAINT work_pk FOR (w:work) REQUIRE w.id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT customer_pk IF NOT EXISTS FOR (cust:customer) REQUIRE cust.id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT item_pk IF NOT EXISTS FOR (it:item) REQUIRE it.id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT worktype_pk IF NOT EXISTS FOR (wt:worktype) REQUIRE wt.id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT invoice_pk IF NOT EXISTS FOR (in:invoice) REQUIRE in.id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT target_pk IF NOT EXISTS FOR (tar:target) REQUIRE tar.id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT work_pk IF NOT EXISTS FOR (w:work) REQUIRE w.id IS UNIQUE")
     neo4j.execute_query("CALL db.awaitIndexes()")
 
     # Create "PAYS" relationship from "customer" to "invoice"
@@ -264,7 +166,6 @@ CREATE (cust)-[:CUSTOMER_TARGET]->(tar)""",
 LOAD CSV WITH HEADERS FROM 'file:///warehouse/workinvoice.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (inv:invoice {id: toInteger(row.invoiceid)})
-CREATE (inv)-[:WORK_INVOICE]->(w)
 CREATE (w)-[:WORK_INVOICE]->(inv)""",
                         database_="neo4j")
 
@@ -273,8 +174,7 @@ CREATE (w)-[:WORK_INVOICE]->(inv)""",
 LOAD CSV WITH HEADERS FROM 'file:///warehouse/worktarget.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (tar:target {id: toInteger(row.targetid)})
-CREATE (w)-[:WORK_TARGET]->(tar)
-CREATE (tar)-[:WORK_TARGET]->(w)""",
+CREATE (w)-[:WORK_TARGET]->(tar)""",
                         database_="neo4j")
 
     #  Create "USED_ITEM" relationship between "work" and "item"
@@ -283,9 +183,7 @@ LOAD CSV WITH HEADERS FROM 'file:///warehouse/useditem.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (it:item {id: toInteger(row.itemid)})
 CREATE (w)-[:USED_ITEM {amount: toInteger(row.amount),
-discount: toFloat(row.discount)} ]->(it)
-CREATE (it)-[:USED_ITEM {amount: toInteger(row.amount),
-discount: toFloat(row.discount)} ]->(w)""",
+discount: toFloat(row.discount)} ]->(it)""",
                         database_="neo4j")
 
     #  Create "WORKHOURS" relationship between "work" and "worktype"
@@ -294,9 +192,7 @@ LOAD CSV WITH HEADERS FROM 'file:///warehouse/workhours.csv' AS row
 MATCH (w:work {id: toInteger(row.workid)})
 MATCH (wt:worktype {id: toInteger(row.worktypeid)})
 CREATE (w)-[:WORKHOURS {hours: toInteger(row.hours),
-discount: toFloat(row.discount)} ]->(wt)
-CREATE (wt)-[:WORKHOURS {hours: toInteger(row.hours),
-discount: toFloat(row.discount)} ]->(w)""",
+discount: toFloat(row.discount)} ]->(wt)""",
                         database_="neo4j")
 
 
@@ -317,8 +213,8 @@ CREATE (:student {student_id: row.student_id, name: row.name})""",
                         database_="neo4j")
 
     #  Create indexes for fast search
-    neo4j.execute_query("CREATE CONSTRAINT student_pk FOR (st:student) REQUIRE st.student_id IS UNIQUE")
-    neo4j.execute_query("CREATE CONSTRAINT course_pk FOR (co:course) REQUIRE co.course_id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT student_pk IF NOT EXISTS FOR (st:student) REQUIRE st.student_id IS UNIQUE")
+    neo4j.execute_query("CREATE CONSTRAINT course_pk IF NOT EXISTS FOR (co:course) REQUIRE co.course_id IS UNIQUE")
     neo4j.execute_query("CALL db.awaitIndexes()")
 
     #  Create "TAKES" relationship between "student" and "course"
@@ -336,3 +232,30 @@ MATCH (co:course {course_id: row.course_id})
 MATCH (pre:course {course_id: row.prereq_id})
 CREATE (co)-[:PREREQ]->(pre)""",
                         database_="neo4j")
+
+
+PSQL_TABLES = {
+    "warehouse": [
+        ("customer", lambda x: (int(x[0]), x[1], x[2])),
+        ("item", lambda x: (int(x[0]), x[1], int(x[2]), x[3], float(x[4]), float(x[5]), x[6] == "true")),
+        ("worktype", lambda x: (int(x[0]), x[1], int(x[2]))),
+        ("invoice", lambda x: (int(x[0]), int(x[1]), int(x[2]), int(x[4]))),
+        ("target", lambda x: (int(x[0]), x[1], x[2], int(x[3]))),
+        ("work", lambda x: (int(x[0]), x[1])),
+        ("workinvoice", lambda x: (int(x[0]), int(x[1]))),
+        ("worktarget", lambda x: (int(x[0]), int(x[1]))),
+        ("useditem", lambda x: (int(x[0]), float(x[1]), int(x[2]), int(x[3]))),
+        ("workhours", lambda x: (int(x[0]), int(x[1]), float(x[2]), int(x[3]))),
+    ],
+    "university": [
+        ("course", lambda x: (x[0], x[1])),
+        ("student", lambda x: (x[0], x[1])),
+        ("takes", lambda x: (x[0], x[1], x[2], x[3], float(x[4]))),
+        ("prereq", lambda x: (x[0], x[1])),
+    ],
+}
+
+NEO4J_IMPORTERS = {
+    "warehouse": import_to_neo4j_warehouse,
+    "university": import_to_neo4j_university,
+}
