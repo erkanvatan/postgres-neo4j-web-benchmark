@@ -83,3 +83,11 @@ CREATE TABLE IF NOT EXISTS workhours (
     CONSTRAINT workhours_ibfk_2 FOREIGN KEY (worktypeId) REFERENCES worktype (id)
 );
 
+
+-- Foreign key indexes, so joins can start from either side like Neo4j relationships
+CREATE INDEX IF NOT EXISTS invoice_customerid_idx ON invoice (customerid);
+CREATE INDEX IF NOT EXISTS target_customerid_idx ON target (customerid);
+CREATE INDEX IF NOT EXISTS workinvoice_invoiceid_idx ON workinvoice (invoiceid);
+CREATE INDEX IF NOT EXISTS worktarget_targetid_idx ON worktarget (targetid);
+CREATE INDEX IF NOT EXISTS useditem_itemid_idx ON useditem (itemid);
+CREATE INDEX IF NOT EXISTS workhours_worktypeid_idx ON workhours (worktypeid);

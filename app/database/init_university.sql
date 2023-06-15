@@ -29,3 +29,7 @@ CREATE TABLE IF NOT EXISTS prereq (
     FOREIGN KEY (prereq_id) REFERENCES course (course_id)
 );
 
+
+-- Foreign key indexes, so joins can start from either side like Neo4j relationships
+CREATE INDEX IF NOT EXISTS takes_course_id_idx ON takes (course_id);
+CREATE INDEX IF NOT EXISTS prereq_prereq_id_idx ON prereq (prereq_id);

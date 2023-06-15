@@ -93,6 +93,9 @@ def import_to_psql(db_name: str, tables: list) -> bool:
             psql.rollback()
             is_ok = False
 
+    # Refresh planner statistics after the bulk load
+    psql.execute("ANALYZE")
+    psql.commit()
     return is_ok
 
 
