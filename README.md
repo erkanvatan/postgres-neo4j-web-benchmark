@@ -20,10 +20,10 @@ Run the same question as SQL and as Cypher, side by side, and compare how fast P
 
 This is a web app for comparing a relational database with a graph database on the same data. It loads two generated datasets into both PostgreSQL and Neo4j. Then you can write a query pair (one SQL, one Cypher), run each one N times, and look at the timings on a history page.
 
-- **Two datasets.** `warehouse` is a join-heavy business schema with 2.6M rows. `university` holds 200K course prerequisites linked in chains 100 levels deep, which suits recursive queries.
+- **Two datasets.** `warehouse` is a join-heavy business schema with 2.6M rows. `university` is a branching prerequisite graph (202K courses, 390K prerequisite links, up to 100 levels deep) with 10K students.
 - **Same data in both databases.** The generators write CSV files once. PostgreSQL loads them with `COPY`, and Neo4j loads them with `LOAD CSV`.
 - **Fair timing.** Both databases are timed the same way, on the client, from sending the query until every row is fetched and the transaction is committed.
-- **Saved queries.** Five sample query pairs come preloaded, and you can save your own from the UI.
+- **Saved queries.** Eleven sample query pairs come preloaded, and you can save your own from the UI.
 - **Benchmark history.** Every run is stored with its per-run times, row counts, and min, median and max.
 
 ## Getting started
@@ -72,29 +72,49 @@ Credentials live in `.env`. `task up` creates it from [`.env.example`](.env.exam
 
 ## Sample benchmarks
 
-These are the five preloaded query pairs. Each one ran once as a warm-up, then 10 more times. Times are in milliseconds. In every pair, both databases return the same rows.
+The eleven preloaded query pairs are picked so each database gets cases it should win. Each pair ran once as a warm-up, then 10 more times. Times are medians in milliseconds (min / max are in the history page). Every pair returns exactly the same values on both databases.
 
-| Query | Dataset | Rows | PostgreSQL min / median / max | Neo4j min / median / max | Faster |
-| --- | --- | ---: | --- | --- | --- |
-| Work price from work hours (2 joins) | warehouse | 10,000 | 92 / **113** / 140 | 374 / **399** / 463 | PostgreSQL, 3.5× |
-| Work price from hours and used items (4 joins) | warehouse | 10,000 | 523 / **543** / 703 | 787 / **814** / 885 | PostgreSQL, 1.5× |
-| All prerequisites, recursive, 100 levels deep | university | 200,000 | 5,050 / **5,148** / 5,309 | 4,644 / **4,888** / 5,666 | Neo4j, 1.05× |
-| Grade sums for filtered students and courses | university | 10 | 41 / **43** / 60 | 35 / **39** / 47 | Neo4j, 1.1× |
-| Students who completed all prerequisites | university | 9,037 | 90 / **99** / 120 | 231 / **253** / 305 | PostgreSQL, 2.6× |
+| # | Query | Expected | PostgreSQL | Neo4j | Faster |
+| ---: | --- | --- | ---: | ---: | --- |
+| 1 | Work price for every work (2 joins, 10K rows) | PostgreSQL | **103** | 368 | PostgreSQL, 3.6× |
+| 2 | Top 10 customers by revenue (4 joins over 1M links) | PostgreSQL | **1,510** | 3,259 | PostgreSQL, 2.2× |
+| 3 | One customer by id | Neutral | **0.2** | 2.3 | PostgreSQL, 12× |
+| 4 | Distinct items used by one customer (3 hops) | Neo4j | **0.8** | 3.9 | PostgreSQL, 4.7× |
+| 5 | Prerequisites of one course, depth ≤ 5 (39 courses) | Neo4j | **0.6** | 2.5 | PostgreSQL, 4.3× |
+| 6 | Same, depth ≤ 10 (175 courses) | Neo4j | **1.5** | 3.2 | PostgreSQL, 2.1× |
+| 7 | Same, depth ≤ 20 (1,177 courses) | Neo4j | 15.9 | **5.0** | Neo4j, 3.2× |
+| 8 | Same, depth ≤ 30 (3,557 courses) | Neo4j | 94.9 | **10.7** | Neo4j, 8.8× |
+| 9 | Shortest prerequisite path between two courses (28 hops) | Neo4j | 76.5 | **4.5** | Neo4j, 17× |
+| 10 | Top 10 course recommendations from classmates | Neo4j | **7.8** | 56.6 | PostgreSQL, 7.2× |
+| 11 | Level-110 enrollments with all prerequisites completed | Open | 202 | **143** | Neo4j, 1.4× |
+
+The depth sweep (queries 5–8) shows where the lines cross:
+
+```mermaid
+xychart-beta
+    title "Prerequisites within N levels (median ms)"
+    x-axis "Depth" [5, 10, 20, 30]
+    y-axis "ms" 0 --> 100
+    line [0.6, 1.5, 15.9, 94.9]
+    line [2.5, 3.2, 5.0, 10.7]
+```
+
+<sup>Steep line: PostgreSQL. Flat line: Neo4j.</sup>
 
 What the numbers show:
 
-- **Joins and aggregates:** PostgreSQL wins clearly. Its hash joins and `GROUP BY` beat walking relationships one by one.
-- **Deep recursive traversal:** the two are close, and Neo4j comes out a little ahead. Variable-length paths (`[:PREREQ*1..]`) are what a graph is built for, while `WITH RECURSIVE` has to rebuild its working table on every level.
-- **Small, selective queries:** both finish in under 50 ms, and the gap is mostly noise.
+- **Scans, joins and aggregates belong to PostgreSQL.** Queries 1 and 2 touch most of the data, and set-based hash joins beat following relationships one at a time.
+- **Small lookups also go to PostgreSQL**, even multi-hop ones. With foreign-key indexes, a 3-hop lookup costs under a millisecond. Neo4j pays about 2 ms of fixed overhead per query (transaction and Bolt round trips), which dominates anything this small.
+- **Deep traversals belong to Neo4j.** A recursive CTE keeps every *(course, depth)* pair it reaches, so its work grows with depth. Neo4j walks the graph breadth-first and visits each course once. Past depth 10 the gap widens fast: 3× at depth 20, 9× at depth 30, and 17× for shortest path, where Neo4j searches from both ends.
+- **The surprise is recommendations (query 10).** It's a textbook graph query, but each course has only about 5 students here, so the neighbourhood is small (about 16K rows). PostgreSQL's index joins win at that size. Neo4j Community runs Cypher on its interpreted row-at-a-time runtime; the faster pipelined runtime is Enterprise-only.
 
 <details>
 <summary>Test setup</summary>
 
 - Intel Core i7-10510U (4 cores, 8 threads), 16 GB RAM, Linux
-- PostgreSQL 15.2 and Neo4j 5.6.0 Community, both in Docker with the settings in [`docker-compose.yaml`](docker-compose.yaml)
-- Default generator sizes. Warehouse: 10K customers, 100K items, 100K invoices, 1M work–invoice links. University: 202K courses, 200K prerequisites, 10K students, 510K enrollments.
-- The query text is in [`app/database/init_saved_queries.sql`](app/database/init_saved_queries.sql)
+- PostgreSQL 15.2 and Neo4j 5.6.0 Community, both in Docker with the settings in [`docker-compose.yaml`](docker-compose.yaml). PostgreSQL has foreign-key indexes and fresh `ANALYZE` statistics. Neo4j has uniqueness constraints on every id.
+- Default generator sizes. Warehouse: 10K customers, 100K items, 100K invoices, 1M work–invoice links. University: 202K courses, 390K prerequisite links, 10K students, 544K enrollments.
+- The university generator is seeded, so `task generate` rebuilds the same graph. The query text is in [`app/database/init_saved_queries.sql`](app/database/init_saved_queries.sql).
 
 </details>
 
@@ -116,6 +136,7 @@ flowchart LR
 
 - **Data generation:** the `warehouse` generator is a multi-threaded Java program. It builds rows in a PostgreSQL scratch database and exports them to CSV. The `university` generator is a Python script that uses Faker.
 - **Graph model:** every table becomes a node label, and every foreign key or link table becomes one relationship, such as `(:work)-[:WORKHOURS {hours, discount}]->(:worktype)`. Each relationship is stored once, in one direction, the same way PostgreSQL stores one row.
+- **Fair setup:** PostgreSQL gets an index on every foreign key and runs `ANALYZE` after each import, so joins can start from either side, the way Neo4j relationships can.
 - **Timing:** each run uses `time.perf_counter()` around execute, fetch all and commit. That's `psycopg` for PostgreSQL and the Neo4j driver's `execute_query` for Neo4j. Both include the network round trip and moving the results, so the comparison stays fair.
 
 ### Project layout
