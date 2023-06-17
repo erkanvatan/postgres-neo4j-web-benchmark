@@ -88,7 +88,7 @@ Both databases can answer the same questions. They store the data differently, a
 - **There is no overall winner.** Run only the aggregate queries and PostgreSQL looks 2–4× faster. Run only shortest path and Neo4j looks 17× faster. Both are true, and each on its own is misleading.
 - **The crossover point is what matters.** On this data, Neo4j only starts winning past about 10 levels of traversal. Knowing which side of that line your real queries fall on is more useful than any single score.
 - **Fixed costs and growth rates are different things.** Neo4j pays more to start each query but less per hop. That matters for an API that makes hundreds of tiny lookups per request, and it doesn't matter for one deep traversal.
-- **How you write the query matters.** The first, natural Cypher for recommendations was 5× slower than an equivalent rewrite. PostgreSQL's planner fixed the same pattern on its own. A benchmark of only one shape would never show this.
+- **How you write the query matters.** Two correct Cypher versions of the recommendation query differ by 4.5× ([see below](#two-ways-to-write-the-recommendation-query)). PostgreSQL's planner optimises the same pattern on its own. A benchmark of only one shape would never show this.
 
 Rule of thumb from these results: if most of your queries are reports, filters and aggregates, use PostgreSQL. If they follow relationships to an unknown or large depth (dependency graphs, routes, fraud rings, recommendations at scale), Neo4j earns its keep. Many systems run both.
 
@@ -128,7 +128,35 @@ What the numbers show:
 - **Scans, joins and aggregates belong to PostgreSQL.** Queries 1 and 2 touch most of the data, and set-based hash joins beat following relationships one at a time.
 - **Small lookups are a tie between the engines.** The fixed cost per query decides them. Neo4j pays about 1.5 ms per call before doing any work: about 0.5 ms in the Python driver, and about 1 ms on the server to open and close the transaction. PostgreSQL pays about 0.16 ms. Without that cost, the engines are even (see the table below).
 - **Deep traversals belong to Neo4j.** A recursive CTE keeps every *(course, depth)* pair it reaches, so its work grows with depth. Neo4j walks the graph breadth-first and visits each course once. Past depth 10 the gap widens fast: 3× at depth 20, 9× at depth 30, and 17× for shortest path, where Neo4j searches from both ends.
-- **Recommendations (query 10) went against expectations.** The first Cypher version checked "did I already take this course?" once per candidate row, about 250K storage reads, and took 57 ms. Collecting my courses once and filtering against that list gives the same result in 12.6 ms. PostgreSQL still wins: its planner turns `NOT EXISTS` into one hash anti-join by itself. And with about 5 students per course, the neighbourhood is small (about 16K rows), so there's little graph to walk. Neo4j Community also lacks the faster query runtime, which is Enterprise-only.
+- **Recommendations (query 10) went against expectations.** PostgreSQL wins even against the faster of [two Cypher versions](#two-ways-to-write-the-recommendation-query). With about 5 students per course, the neighbourhood is small (about 16K rows), so there's little graph to walk. Neo4j Community also lacks the faster query runtime, which is Enterprise-only.
+
+#### Two ways to write the recommendation query
+
+The query finds courses taken by a student's classmates that the student hasn't taken yet. Both versions return the same 10 rows.
+
+The natural version checks "did the student already take this course?" once for every candidate row. That's about 250K storage reads. Median: **56.6 ms**.
+
+```cypher
+MATCH (me:student {student_id: '19061384'})-[:TAKES]->(:course)<-[:TAKES]-(peer:student)-[:TAKES]->(rec:course)
+WHERE peer <> me AND NOT EXISTS { (me)-[:TAKES]->(rec) }
+RETURN rec.course_id AS course_id, count(*) AS score
+ORDER BY score DESC, course_id LIMIT 10
+```
+
+The version used in the benchmark collects the student's courses once, then filters against that list. Median: **12.6 ms**, 4.5× faster.
+
+```cypher
+MATCH (me:student {student_id: '19061384'})-[:TAKES]->(c:course)
+WITH me, collect(c) AS mine
+UNWIND mine AS c
+MATCH (c)<-[:TAKES]-(peer:student)-[:TAKES]->(rec:course)
+WHERE peer <> me AND NOT rec IN mine
+WITH rec, count(*) AS score
+RETURN rec.course_id AS course_id, score
+ORDER BY score DESC, course_id LIMIT 10
+```
+
+The SQL version uses a plain `NOT EXISTS`, and PostgreSQL runs it as a single hash anti-join on its own (median **6.8 ms**). With Neo4j, you have to choose that shape yourself.
 
 Engine time only, without the fixed cost per query. PostgreSQL time comes from `EXPLAIN (ANALYZE, TIMING OFF)`. Neo4j time is the server time from the driver's result summary, which only reports whole milliseconds.
 
