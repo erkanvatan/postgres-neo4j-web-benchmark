@@ -134,9 +134,14 @@ AND NOT EXISTS (SELECT 1 FROM takes t4 WHERE t4.student_id = t1.student_id AND t
 GROUP BY t3.course_id
 ORDER BY score DESC, t3.course_id
 LIMIT 10$$,
-$$MATCH (me:student {student_id: '19061384'})-[:TAKES]->(:course)<-[:TAKES]-(peer:student)-[:TAKES]->(rec:course)
-WHERE peer <> me AND NOT EXISTS { (me)-[:TAKES]->(rec) }
-RETURN rec.course_id AS course_id, count(*) AS score
+$$// Collect my courses once: a NOT EXISTS { (me)-[:TAKES]->(rec) } check per row is about 5x slower
+MATCH (me:student {student_id: '19061384'})-[:TAKES]->(c:course)
+WITH me, collect(c) AS mine
+UNWIND mine AS c
+MATCH (c)<-[:TAKES]-(peer:student)-[:TAKES]->(rec:course)
+WHERE peer <> me AND NOT rec IN mine
+WITH rec, count(*) AS score
+RETURN rec.course_id AS course_id, score
 ORDER BY score DESC, course_id
 LIMIT 10$$,
 10),
