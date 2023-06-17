@@ -10,7 +10,7 @@
 
 Run the same question as SQL and as Cypher, side by side, and compare how fast PostgreSQL and Neo4j answer it.
 
-[Overview](#overview) • [Getting started](#getting-started) • [Sample benchmarks](#sample-benchmarks) • [How it works](#how-it-works)
+[Overview](#overview) • [Getting started](#getting-started) • [PostgreSQL vs Neo4j](#postgresql-vs-neo4j) • [Sample benchmarks](#sample-benchmarks) • [How it works](#how-it-works)
 
 ![Benchmark History page](docs/images/benchmark-history.png)
 
@@ -70,6 +70,28 @@ Then open http://localhost:5000:
 
 Credentials live in `.env`. `task up` creates it from [`.env.example`](.env.example).
 
+## PostgreSQL vs Neo4j
+
+Both databases can answer the same questions. They store the data differently, and that decides which questions are cheap.
+
+| | PostgreSQL | Neo4j |
+| --- | --- | --- |
+| Data model | Tables of rows. A relationship is a foreign-key value. | Nodes and relationships, both stored as records. |
+| Following a relationship | Matched at query time, with an index lookup or a hash join. | Each node record points to its relationships, so a hop is a pointer lookup ("index-free adjacency"). |
+| How a query runs | Set-based: the planner joins whole tables and picks the strategy. | Pattern-based: start at some nodes, then walk outward. |
+| Cost grows with | The size of the tables involved. | The part of the graph the query touches. |
+| Strong at | Scans, filters, joins and aggregates over many rows. | Multi-hop and variable-depth traversals, paths, neighbourhoods. |
+| Weak at | Recursive queries. Each level is another self-join, and the work piles up with depth. | Whole-dataset aggregates, plus a fixed cost of about 1.5 ms per query. |
+
+### Why benchmark different use cases
+
+- **There is no overall winner.** Run only the aggregate queries and PostgreSQL looks 2–4× faster. Run only shortest path and Neo4j looks 17× faster. Both are true, and each on its own is misleading.
+- **The crossover point is what matters.** On this data, Neo4j only starts winning past about 10 levels of traversal. Knowing which side of that line your real queries fall on is more useful than any single score.
+- **Fixed costs and growth rates are different things.** Neo4j pays more to start each query but less per hop. That matters for an API that makes hundreds of tiny lookups per request, and it doesn't matter for one deep traversal.
+- **How you write the query matters.** The first, natural Cypher for recommendations was 5× slower than an equivalent rewrite. PostgreSQL's planner fixed the same pattern on its own. A benchmark of only one shape would never show this.
+
+Rule of thumb from these results: if most of your queries are reports, filters and aggregates, use PostgreSQL. If they follow relationships to an unknown or large depth (dependency graphs, routes, fraud rings, recommendations at scale), Neo4j earns its keep. Many systems run both.
+
 ## Sample benchmarks
 
 The eleven preloaded query pairs are picked so each database gets cases it should win. Each pair ran once as a warm-up, then 10 more times. Times are medians in milliseconds (min / max are in the history page). Every pair returns exactly the same values on both databases.
@@ -85,7 +107,7 @@ The eleven preloaded query pairs are picked so each database gets cases it shoul
 | 7 | Same, depth ≤ 20 (1,177 courses) | Neo4j | 15.9 | **5.0** | Neo4j, 3.2× |
 | 8 | Same, depth ≤ 30 (3,557 courses) | Neo4j | 94.9 | **10.7** | Neo4j, 8.8× |
 | 9 | Shortest prerequisite path between two courses (28 hops) | Neo4j | 76.5 | **4.5** | Neo4j, 17× |
-| 10 | Top 10 course recommendations from classmates | Neo4j | **7.8** | 56.6 | PostgreSQL, 7.2× |
+| 10 | Top 10 course recommendations from classmates | Neo4j | **6.8** | 12.6 | PostgreSQL, 1.9× |
 | 11 | Level-110 enrollments with all prerequisites completed | Open | 202 | **143** | Neo4j, 1.4× |
 
 The depth sweep (queries 5–8) shows where the lines cross:
@@ -104,9 +126,20 @@ xychart-beta
 What the numbers show:
 
 - **Scans, joins and aggregates belong to PostgreSQL.** Queries 1 and 2 touch most of the data, and set-based hash joins beat following relationships one at a time.
-- **Small lookups also go to PostgreSQL**, even multi-hop ones. With foreign-key indexes, a 3-hop lookup costs under a millisecond. Neo4j pays about 2 ms of fixed overhead per query (transaction and Bolt round trips), which dominates anything this small.
+- **Small lookups are a tie between the engines.** The fixed cost per query decides them. Neo4j pays about 1.5 ms per call before doing any work: about 0.5 ms in the Python driver, and about 1 ms on the server to open and close the transaction. PostgreSQL pays about 0.16 ms. Without that cost, the engines are even (see the table below).
 - **Deep traversals belong to Neo4j.** A recursive CTE keeps every *(course, depth)* pair it reaches, so its work grows with depth. Neo4j walks the graph breadth-first and visits each course once. Past depth 10 the gap widens fast: 3× at depth 20, 9× at depth 30, and 17× for shortest path, where Neo4j searches from both ends.
-- **The surprise is recommendations (query 10).** It's a textbook graph query, but each course has only about 5 students here, so the neighbourhood is small (about 16K rows). PostgreSQL's index joins win at that size. Neo4j Community runs Cypher on its interpreted row-at-a-time runtime; the faster pipelined runtime is Enterprise-only.
+- **Recommendations (query 10) went against expectations.** The first Cypher version checked "did I already take this course?" once per candidate row, about 250K storage reads, and took 57 ms. Collecting my courses once and filtering against that list gives the same result in 12.6 ms. PostgreSQL still wins: its planner turns `NOT EXISTS` into one hash anti-join by itself. And with about 5 students per course, the neighbourhood is small (about 16K rows), so there's little graph to walk. Neo4j Community also lacks the faster query runtime, which is Enterprise-only.
+
+Engine time only, without the fixed cost per query. PostgreSQL time comes from `EXPLAIN (ANALYZE, TIMING OFF)`. Neo4j time is the server time from the driver's result summary, which only reports whole milliseconds.
+
+| # | Query | PostgreSQL engine | Neo4j engine |
+| ---: | --- | ---: | ---: |
+| 4 | Items used by one customer (3 hops) | 0.84 | ~1 |
+| 5 | Depth ≤ 5 | 0.40 | ~1 |
+| 6 | Depth ≤ 10 | 1.30 | ~1 |
+| 7 | Depth ≤ 20 | 18.2 | ~3 |
+| 8 | Depth ≤ 30 | 99.3 | ~7 |
+| 9 | Shortest path | 76.4 | ~2 |
 
 <details>
 <summary>Test setup</summary>
