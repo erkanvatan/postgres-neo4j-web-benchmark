@@ -31,21 +31,25 @@ LIMIT 10$$,
 10),
 
 ('warehouse',
-$$-- One customer by id
-SELECT id, name, address FROM customer WHERE id = 4000$$,
-$$MATCH (c:customer {id: 4000})
-RETURN c.id AS id, c.name AS name, c.address AS address$$,
+$$-- Top 10 most expensive items (sort 100K rows)
+SELECT id, name, purchaseprice FROM item
+ORDER BY purchaseprice DESC, id
+LIMIT 10$$,
+$$MATCH (i:item)
+RETURN i.id AS id, i.name AS name, i.purchaseprice AS purchaseprice
+ORDER BY purchaseprice DESC, id
+LIMIT 10$$,
 10),
 
 ('warehouse',
-$$-- Distinct items used for one customer (customer > targets > works > items)
-SELECT count(DISTINCT u.itemid)
-FROM target t
-INNER JOIN worktarget wt ON wt.targetid = t.id
-INNER JOIN useditem u ON u.workid = wt.workid
-WHERE t.customerid = 4000$$,
-$$MATCH (:customer {id: 4000})-[:CUSTOMER_TARGET]->(:target)<-[:WORK_TARGET]-(:work)-[:USED_ITEM]->(i:item)
-RETURN count(DISTINCT i)$$,
+$$-- Stock value per unit (group 100K rows)
+SELECT unit, count(*) AS items, ROUND(SUM(balance * purchaseprice), 2) AS stock_value
+FROM item
+GROUP BY unit
+ORDER BY unit$$,
+$$MATCH (i:item)
+RETURN i.unit AS unit, count(*) AS items, round(sum(i.balance * i.purchaseprice), 2) AS stock_value
+ORDER BY unit$$,
 10),
 
 ('university',

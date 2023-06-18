@@ -85,7 +85,7 @@ Both databases can answer the same questions. They store the data differently, a
 
 ### Why benchmark different use cases
 
-- **There is no overall winner.** Run only the aggregate queries and PostgreSQL looks 2–4× faster. Run only shortest path and Neo4j looks 17× faster. Both are true, and each on its own is misleading.
+- **There is no overall winner.** Run only the scan and aggregate queries and PostgreSQL looks 2–4.5× faster. Run only shortest path and Neo4j looks 17× faster. Both are true, and each on its own is misleading.
 - **The crossover point is what matters.** On this data, Neo4j only starts winning past about 10 levels of traversal. Knowing which side of that line your real queries fall on is more useful than any single score.
 - **Fixed costs and growth rates are different things.** Neo4j pays more to start each query but less per hop. That matters for an API that makes hundreds of tiny lookups per request, and it doesn't matter for one deep traversal.
 - **How you write the query matters.** Two correct Cypher versions of the recommendation query differ by 4.5× ([see below](#two-ways-to-write-the-recommendation-query)). PostgreSQL's planner optimises the same pattern on its own. A benchmark of only one shape would never show this.
@@ -100,10 +100,10 @@ The eleven preloaded query pairs are picked so each database gets cases it shoul
 | ---: | --- | --- | ---: | ---: | --- |
 | 1 | Work price for every work (2 joins, 10K rows) | PostgreSQL | **103** | 368 | PostgreSQL, 3.6× |
 | 2 | Top 10 customers by revenue (4 joins over 1M links) | PostgreSQL | **1,510** | 3,259 | PostgreSQL, 2.2× |
-| 3 | One customer by id | Neutral | **0.2** | 2.3 | PostgreSQL, 12× |
-| 4 | Distinct items used by one customer (3 hops) | Neo4j | **0.8** | 3.9 | PostgreSQL, 4.7× |
-| 5 | Prerequisites of one course, depth ≤ 5 (39 courses) | Neo4j | **0.6** | 2.5 | PostgreSQL, 4.3× |
-| 6 | Same, depth ≤ 10 (175 courses) | Neo4j | **1.5** | 3.2 | PostgreSQL, 2.1× |
+| 3 | Top 10 most expensive items (sort 100K rows) | PostgreSQL | **16.3** | 72.7 | PostgreSQL, 4.5× |
+| 4 | Stock value per unit (group 100K rows) | PostgreSQL | **32.8** | 110 | PostgreSQL, 3.4× |
+| 5 | Prerequisites of one course, depth ≤ 5 (39 courses) | Open | **0.6** | 2.5 | PostgreSQL, 4.3× |
+| 6 | Same, depth ≤ 10 (175 courses) | Open | **1.5** | 3.2 | PostgreSQL, 2.1× |
 | 7 | Same, depth ≤ 20 (1,177 courses) | Neo4j | 15.9 | **5.0** | Neo4j, 3.2× |
 | 8 | Same, depth ≤ 30 (3,557 courses) | Neo4j | 94.9 | **10.7** | Neo4j, 8.8× |
 | 9 | Shortest prerequisite path between two courses (28 hops) | Neo4j | 76.5 | **4.5** | Neo4j, 17× |
@@ -125,8 +125,8 @@ xychart-beta
 
 What the numbers show:
 
-- **Scans, joins and aggregates belong to PostgreSQL.** Queries 1 and 2 touch most of the data, and set-based hash joins beat following relationships one at a time.
-- **Small lookups are a tie between the engines.** The fixed cost per query decides them. Neo4j pays about 1.5 ms per call before doing any work: about 0.5 ms in the Python driver, and about 1 ms on the server to open and close the transaction. PostgreSQL pays about 0.16 ms. Without that cost, the engines are even (see the table below).
+- **Scans, sorts, joins and aggregates belong to PostgreSQL.** Queries 1–4 touch most of a table. PostgreSQL reads packed rows and joins whole sets at once. Neo4j loads every node and reads its properties one by one.
+- **Shallow traversals are a tie between the engines.** Queries 5 and 6 touch fewer than 200 courses, so the fixed cost per query decides them. Neo4j pays about 1.5 ms per call before doing any work: about 0.5 ms in the Python driver, and about 1 ms on the server to open and close the transaction. PostgreSQL pays about 0.16 ms. Without that cost, the engines are even (see the table below).
 - **Deep traversals belong to Neo4j.** A recursive CTE keeps every *(course, depth)* pair it reaches, so its work grows with depth. Neo4j walks the graph breadth-first and visits each course once. Past depth 10 the gap widens fast: 3× at depth 20, 9× at depth 30, and 17× for shortest path, where Neo4j searches from both ends.
 - **Recommendations (query 10) went against expectations.** PostgreSQL wins even against the faster of [two Cypher versions](#two-ways-to-write-the-recommendation-query). With about 5 students per course, the neighbourhood is small (about 16K rows), so there's little graph to walk. Neo4j Community also lacks the faster query runtime, which is Enterprise-only.
 
@@ -162,7 +162,6 @@ Engine time only, without the fixed cost per query. PostgreSQL time comes from `
 
 | # | Query | PostgreSQL engine | Neo4j engine |
 | ---: | --- | ---: | ---: |
-| 4 | Items used by one customer (3 hops) | 0.84 | ~1 |
 | 5 | Depth ≤ 5 | 0.40 | ~1 |
 | 6 | Depth ≤ 10 | 1.30 | ~1 |
 | 7 | Depth ≤ 20 | 18.2 | ~3 |
